@@ -1,14 +1,14 @@
-export const RemoveIdeaFromCalendar = async (ideaId: string) => {
-    const response = await fetch(`http://localhost:3001/ideas/${ideaId}/remove-from-calendar`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
+export const removeIdeaFromCalendar = async (scheduledPostId: string) => {
+  const response = await fetch(
+    `http://localhost:3001/scheduled-posts/${scheduledPostId}`,
+    {
+      method: 'DELETE',
+    },
+  )
 
-    if (!response.ok) {
-        throw new Error('Failed to remove idea from calendar');
-    }
+  if (!response.ok) {
+    throw new Error('Failed to remove idea from calendar')
+  }
 
-    return response.json();
+  return response.text()
 }

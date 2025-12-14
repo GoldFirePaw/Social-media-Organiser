@@ -35,15 +35,15 @@ export async function scheduledPostsRoutes(fastify: FastifyInstance) {
   })
 
   fastify.get('/scheduled-posts', async () => {
-  return prisma.scheduledPost.findMany({
-    include: {
-      idea: true,
-    },
-    orderBy: {
-      date: 'asc',
-    },
+    return prisma.scheduledPost.findMany({
+      include: {
+        idea: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    })
   })
-})
 
 fastify.put('/scheduled-posts/:id', async (request, reply) => {
   const { id } = request.params as { id: string }

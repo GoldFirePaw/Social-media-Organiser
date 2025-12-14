@@ -1,15 +1,15 @@
-export const AddIdeaToCalendar = async (ideaId: string, date: string) => {
-    const response = await fetch(`http://localhost:3001/ideas/${ideaId}/add-to-calendar`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ date }),
-    });
+export const AddIdeaToCalendar = async (date: string, ideaId: string) => {
+  const response = await fetch(`http://localhost:3001/scheduled-posts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ideaId, date }),
+  });
 
-    if (!response.ok) {
-        throw new Error('Failed to add idea to calendar');
-    }
+  if (!response.ok) {
+    throw new Error("Failed to add idea to calendar");
+  }
 
-    return response.json();
-}
+  return response.json();
+};
