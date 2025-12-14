@@ -1,0 +1,19 @@
+.blue {
+  background-color: #e0f0ff;
+  color: #007bff;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.pink {
+  background-color: #ffe0f0;
+  color: #ff007b;
+  border: 1px solid #ff007b;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  margin-right: 4px;
+}

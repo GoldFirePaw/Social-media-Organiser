@@ -1,70 +1,97 @@
-# Getting Started with Create React App
+# Social Media Organiser
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Full-stack playground for logging content ideas and tracking their progress. The repository contains a Fastify + Prisma backend (TypeScript) and a Vite + React frontend (TypeScript).
 
-## Available Scripts
+## Stack Overview
 
-In the project directory, you can run:
+- **Backend** (`backend/`)
+  - Fastify 5 handles HTTP (`src/server.ts`) with a health probe and modular route registration.
+  - Prisma 7 models a SQLite database (see `prisma/schema.prisma`) with `Idea`, `Platform`, and `IdeaStatus`.
+  - Environment-aware configuration lives in `prisma.config.ts`, which loads `.env` and passes the datasource URL to Prisma.
+  - Routes in `src/routes/ideas.ts` expose `POST /ideas` (create idea) and `GET /ideas` (list/filter by platform/status). Both use a shared Prisma client exported from `src/prisma.ts` (implement this before running the API).
+  - `DATABASE_URL` defaults to `file:./dev.db` (SQLite file stored in `backend/dev.db`). Update `backend/.env` if you need another path/adapter.
 
-### `npm start`
+- **Frontend** (`frontend/`)
+  - Vite 7 + React 19 + TypeScript, using the default Vite React template for now.
+  - Entry point (`src/main.tsx`) renders `App.tsx`, which still contains the starter counter UI. Replace this with API calls to your Fastify routes as you evolve the UI.
+  - ESLint 9 is configured via `eslint.config.js`; TypeScript configs live in `tsconfig*.json`.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js 20+
+- npm 10+
+- SQLite bundled with Prisma (no manual install required).
 
-### `npm test`
+## Initial Setup
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+# Install backend deps
+cd backend
+npm install
 
-### `npm run build`
+# Install frontend deps
+cd ../frontend
+npm install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Generate the database and Prisma client (run inside `backend/`):
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npx prisma migrate dev --name init   # creates dev.db based on schema.prisma
+npx prisma generate                  # regenerate client after schema changes
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Implement the Prisma client helper if it is still empty:
 
-### `npm run eject`
+```ts
+// backend/src/prisma.ts
+import { PrismaClient } from '@prisma/client'
+export const prisma = new PrismaClient()
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Development Workflow
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Backend
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+cd backend
+npx ts-node-dev --respawn src/server.ts
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Fastify listens on `http://localhost:3001` (adjust in `src/server.ts`).
+- Routes:
+  - `GET /health` → `{ status: 'ok' }`
+  - `GET /ideas?platform=BOOKTOK&status=PLANNED` → filtered list ordered by `createdAt desc`
+  - `POST /ideas` with JSON body `{ "title": "...", "description": "...?", "platform": "BOOKTOK" }` → persists and returns the record
+- Update `.env` then restart the server (or rely on `ts-node-dev` hot reload) when changing connection info.
 
-## Learn More
+### Frontend
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+cd frontend
+npm run dev
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Vite serves the app on `http://localhost:5173` by default.
+- Configure API calls (e.g., via `fetch`) to hit `http://localhost:3001`. Consider adding a Vite proxy in `vite.config.ts` if you need to avoid CORS in development.
 
-### Code Splitting
+### Linting & Builds
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- Frontend lint: `cd frontend && npm run lint`
+- Frontend build: `cd frontend && npm run build` (outputs to `frontend/dist`)
+- Backend TypeScript build (optional once you add a tsconfig build script): `cd backend && npx tsc`
 
-### Analyzing the Bundle Size
+## Production Notes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+1. Run `npm run build` in `frontend` and serve `dist/` via your choice of static host.
+2. Compile the backend (`npx tsc`) and run Fastify with `node dist/server.js`, ensuring `.env` is available or provide `DATABASE_URL` via your process manager.
+3. For non-SQLite databases, update `DATABASE_URL` accordingly and tweak Prisma schema/provider before running migrations.
 
-### Making a Progressive Web App
+## Testing Ideas
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- Seed data via Prisma (`npx prisma db seed`) once you add a seed script, then exercise the REST routes with `curl` or a tool like Insomnia.
+- Extend the frontend to call the backend APIs, then add integration tests (React Testing Library / Playwright) as the UI grows.
 
-### Advanced Configuration
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Feel free to extend this README as the project evolves (additional routes, deployment steps, CI/CD pipelines, etc.).

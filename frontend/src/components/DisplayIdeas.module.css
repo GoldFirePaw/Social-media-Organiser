@@ -1,0 +1,22 @@
+.ideasContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.idea {
+    display: flex;
+    align-items: center;
+    height: 30px;
+    width: 100%;
+    gap: 10px;
+}
+
+.deleteButton {
+    background-color: transparent;
+    border: none;
+    color: red;
+    cursor: pointer;
+    font-size: 16px;
+}

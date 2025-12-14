@@ -1,0 +1,42 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Idea {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  platform    Platform
+  status      IdeaStatus  @default(IDEA)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  scheduledPosts ScheduledPost[]
+}
+
+enum Platform {
+  BOOKTOK
+  DEVTOK
+}
+
+enum IdeaStatus {
+  IDEA
+  PLANNED
+  DONE
+}
+
+model ScheduledPost {
+  id        String   @id @default(uuid())
+  date      DateTime
+
+  ideaId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([date, ideaId])
+}
