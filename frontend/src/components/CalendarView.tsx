@@ -1,159 +1,226 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import { AddIdeaToCalendar } from "../api/addIdeaToCalendar";
-import { getScheduledPosts } from "../api/getScheduledPosts";
-import type { CalendarEvent } from "../types/calendar";
-import { putScheduledPost } from "../api/putScheduledPost";
-import { removeIdeaFromCalendar } from "../api/removeIdeaFromCalendar";
-import s from "./CalendarView.module.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AddIdeaToCalendar } from '../api/addIdeaToCalendar'
+import { getScheduledPosts } from '../api/getScheduledPosts'
+import { putScheduledPost } from '../api/putScheduledPost'
+import { removeIdeaFromCalendar } from '../api/removeIdeaFromCalendar'
+import type { CalendarEvent } from '../types/calendar'
+import s from './CalendarView.module.css'
 
 type CalendarViewProps = {
-  setIsDrawerOpen: (isOpen: boolean) => void;
-  setSelectedDate: (date: string | undefined) => void;
-};
+  setIsDrawerOpen: (isOpen: boolean) => void
+  setSelectedDate: (date: string | undefined) => void
+  setSelectedIdea: (idea: CalendarEvent | null) => void
+  setSelectedDateIdeas: (ideas: CalendarEvent[]) => void
+}
 
-export const CalendarView = ({
+const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+const getDateKey = (date: Date) => {
+  const timezoneAdjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
+  return timezoneAdjusted.toISOString().split('T')[0]
+}
+
+const toISODate = (dateKey: string) => `${dateKey}T00:00:00.000Z`
+
+const buildCalendarDays = (reference: Date) => {
+  const startOfMonth = new Date(reference.getFullYear(), reference.getMonth(), 1)
+  const startDay = startOfMonth.getDay()
+  const firstGridDate = new Date(startOfMonth)
+  firstGridDate.setDate(1 - startDay)
+
+  const days: Date[] = []
+  const cursor = new Date(firstGridDate)
+  for (let i = 0; i < 42; i++) {
+    days.push(new Date(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return days
+}
+
+export function CalendarView({
   setIsDrawerOpen,
   setSelectedDate,
-}: CalendarViewProps) => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const trashRef = useRef<HTMLDivElement | null>(null);
+  setSelectedIdea,
+  setSelectedDateIdeas,
+}: CalendarViewProps) {
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [currentMonth, setCurrentMonth] = useState(() => new Date())
+  const [draggingEventId, setDraggingEventId] = useState<string | null>(null)
+  const trashRef = useRef<HTMLDivElement | null>(null)
 
   const refreshScheduledPosts = useCallback(async () => {
-    const data = await getScheduledPosts();
-    setEvents(data);
-  }, []);
+    const data = await getScheduledPosts()
+    setEvents(data)
+  }, [])
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const data = await getScheduledPosts();
-        if (active) {
-          setEvents(data);
-        }
-      } catch (error) {
-        console.error("Failed to load scheduled posts", error);
+    refreshScheduledPosts().catch((error) => {
+      console.error('Failed to load scheduled posts', error)
+    })
+  }, [refreshScheduledPosts])
+
+  const calendarDays = useMemo(() => buildCalendarDays(currentMonth), [currentMonth])
+
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>()
+    events.forEach((event) => {
+      const key = (event.date ?? event.start ?? '').slice(0, 10)
+      if (!key) {
+        return
       }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+      const list = map.get(key) ?? []
+      list.push(event)
+      map.set(key, list)
+    })
+    return map
+  }, [events])
 
-  const openDrawer = (dateStr: string) => {
-    setSelectedDate(dateStr);
-    setIsDrawerOpen(true);
-  };
+  const openDrawer = (dateKey: string, idea?: CalendarEvent) => {
+    setSelectedDate(dateKey)
 
-  const handleEventDrop = async (
-    info: Parameters<
-      NonNullable<React.ComponentProps<typeof FullCalendar>["eventDrop"]>
-    >[0]
-  ) => {
-    if (!info.event.id || !info.event.startStr) {
-      return;
+    if (idea) {
+      setSelectedIdea(idea)
+      setSelectedDateIdeas([])
+    } else {
+      setSelectedIdea(null)
+      setSelectedDateIdeas(eventsByDate.get(dateKey) ?? [])
     }
 
-    try {
-      await putScheduledPost(info.event.id, info.event.startStr);
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === info.event.id
-            ? {
-                ...event,
-                start: info.event.startStr,
-                date: info.event.startStr,
-              }
-            : event
+    setIsDrawerOpen(true)
+  }
+
+  const handleDayDrop = async (event: React.DragEvent<HTMLDivElement>, dateKey: string) => {
+    event.preventDefault()
+    const calendarEventId = event.dataTransfer.getData('application/calendar-event')
+    const ideaId = event.dataTransfer.getData('application/idea-id')
+    const isoDate = toISODate(dateKey)
+
+    if (calendarEventId) {
+      try {
+        await putScheduledPost(calendarEventId, isoDate)
+        setEvents((prev) =>
+          prev.map((existing) =>
+            existing.id === calendarEventId ? { ...existing, start: isoDate, date: isoDate } : existing,
+          ),
         )
-      );
-    } catch (error) {
-      console.error("Failed to update scheduled post", error);
-      info.revert();
+      } catch (error) {
+        console.error('Failed to update scheduled post', error)
+      }
+      return
     }
-  };
 
-  const handleDrop = (date: string, id: string | undefined) => {
-    if (!id) return;
-    AddIdeaToCalendar(date, id)
-      .then((newEvent) => {
+    if (ideaId) {
+      try {
+        const newEvent = await AddIdeaToCalendar(isoDate, ideaId)
         setEvents((prev) => [
           ...prev,
           {
             id: newEvent.id,
             title: newEvent.idea.title,
             start: newEvent.date,
+            date: newEvent.date,
             idea: newEvent.idea,
           },
-        ]);
-      })
-      .catch((error) => {
-        console.error("Failed to add idea to calendar", error);
-      });
-  };
+        ])
+      } catch (error) {
+        console.error('Failed to add idea to calendar', error)
+      }
+    }
+  }
+
+  const handleEventDragStart = (eventObj: CalendarEvent, dragEvent: React.DragEvent<HTMLButtonElement>) => {
+    setDraggingEventId(eventObj.id)
+    dragEvent.dataTransfer.setData('application/calendar-event', eventObj.id)
+    dragEvent.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragEnd = () => {
+    setDraggingEventId(null)
+  }
+
+  const handleTrashDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    if (!draggingEventId) {
+      return
+    }
+    try {
+      await removeIdeaFromCalendar(draggingEventId)
+      await refreshScheduledPosts()
+    } catch (error) {
+      console.error('Failed to remove idea from calendar', error)
+    } finally {
+      setDraggingEventId(null)
+    }
+  }
+
+  const changeMonth = (delta: number) => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1))
+  }
+
+  const todayKey = getDateKey(new Date())
+
   return (
-    <>
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        selectable
-        editable
-        droppable
-        eventDrop={handleEventDrop}
-        drop={(info) => {
-          handleDrop(info.dateStr, info.draggedEl.dataset?.id);
-        }}
-        dateClick={(info) => {
-          openDrawer(info.dateStr);
-        }}
-        eventDragStart={() => {
-          setIsDragging(true);
-        }}
-        eventDragStop={async (info) => {
-          const target = trashRef.current;
-          const jsEvent = info.jsEvent;
-          setIsDragging(false);
+    <div className={s.calendarWrapper}>
+      <header className={s.header}>
+        <button type="button" onClick={() => changeMonth(-1)}>
+          ‹
+        </button>
+        <div>
+          {currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}
+        </div>
+        <button type="button" onClick={() => changeMonth(1)}>
+          ›
+        </button>
+      </header>
+      <div className={s.weekdays}>
+        {dayLabels.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
+      <div className={s.grid}>
+        {calendarDays.map((day) => {
+          const dateKey = getDateKey(day)
+          const dayEvents = eventsByDate.get(dateKey) ?? []
+          const isCurrentMonth = day.getMonth() === currentMonth.getMonth()
+          const isToday = dateKey === todayKey
 
-          if (!target || !jsEvent) return;
-
-          const rect = target.getBoundingClientRect();
-          const { clientX, clientY } = jsEvent;
-
-          const isInside =
-            clientX >= rect.left &&
-            clientX <= rect.right &&
-            clientY >= rect.top &&
-            clientY <= rect.bottom;
-
-          if (!isInside) return;
-
-          const eventToRemove = events.find(
-            (event) => event.id === info.event.id
-          );
-          if (!eventToRemove) return;
-
-          try {
-            await removeIdeaFromCalendar(eventToRemove.id);
-            await refreshScheduledPosts();
-          } catch (error) {
-            console.error("Failed to remove idea from calendar", error);
-          }
-        }}
-        events={events.map((event) => ({
-          id: event.id,
-          title: event.idea.title ?? event.title,
-          start: event.date ?? event.start,
-        }))}
-      />
-      {isDragging && (
-        <div className={s.trashBin} ref={trashRef}>
+          return (
+            <div
+              key={dateKey + day.getDate()}
+              className={`${s.day} ${isCurrentMonth ? '' : s.outsideMonth} ${isToday ? s.today : ''}`}
+              onClick={() => openDrawer(dateKey)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => handleDayDrop(event, dateKey)}
+            >
+              <span className={s.dateNumber}>{day.getDate()}</span>
+              <div className={s.events}>
+                {dayEvents.map((eventItem) => (
+                  <button
+                    key={eventItem.id}
+                    className={s.event}
+                    draggable
+                    onDragStart={(dragEvent) => handleEventDragStart(eventItem, dragEvent)}
+                    onDragEnd={handleDragEnd}
+                    onClick={(clickEvent) => {
+                      clickEvent.stopPropagation()
+                      const date = (eventItem.date ?? eventItem.start)?.slice(0, 10) ?? dateKey
+                      openDrawer(date, eventItem)
+                    }}
+                  >
+                    {eventItem.idea.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {draggingEventId && (
+        <div className={s.trashBin} ref={trashRef} onDragOver={(event) => event.preventDefault()} onDrop={handleTrashDrop}>
           🗑️ Supprimer
         </div>
       )}
-    </>
-  );
-};
+    </div>
+  )
+}

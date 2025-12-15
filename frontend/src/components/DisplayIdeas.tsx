@@ -1,60 +1,46 @@
-import { Card } from "./reusableComponents/Card";
-import { useIdeas } from "../hooks/useIdeas";
-import { deleteIdeas } from "../api/deleteIdeas";
-import { Tag } from "./reusableComponents/Tag";
-import s from "./DisplayIdeas.module.css";
-import { CloseButton } from "./reusableComponents/CloseButton";
-import { Draggable } from "@fullcalendar/interaction";
-import { useEffect, useRef } from "react";
+import { Card } from './reusableComponents/Card'
+import { useIdeas } from '../hooks/useIdeas'
+import { deleteIdeas } from '../api/deleteIdeas'
+import { Tag } from './reusableComponents/Tag'
+import s from './DisplayIdeas.module.css'
+import { CloseButton } from './reusableComponents/CloseButton'
+import type { Idea } from '../api/getIdeas'
 
 export function DisplayIdeas() {
-  const { ideas, error, refresh } = useIdeas();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { ideas, error, refresh } = useIdeas()
 
   const handleDeleteIdeas = async (id: string) => {
     try {
-      await deleteIdeas(id);
-      await refresh();
+      await deleteIdeas(id)
+      await refresh()
     } catch (error) {
-      console.error("Error deleting idea:", error);
+      console.error('Error deleting idea:', error)
     }
-  };
+  }
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    new Draggable(containerRef.current, {
-      itemSelector: ".draggable-idea",
-      eventData: (el) => {
-        return {
-          id: el.getAttribute("data-id")!,
-          title: el.getAttribute("data-title")!,
-        };
-      },
-    });
-  }, []);
+  const handleDragStart = (event: React.DragEvent<HTMLDivElement>, idea: Idea) => {
+    event.dataTransfer.setData('application/idea-id', idea.id)
+    event.dataTransfer.effectAllowed = 'copy'
+  }
 
   return (
     <Card title="Display Ideas Component">
       {error && <p>{error}</p>}
-      <div className={s.ideasContainer} ref={containerRef}>
+      <div className={s.ideasContainer}>
         {!error &&
           ideas.map((idea) => (
             <div
-              className={`${s.idea} draggable-idea`}
+              className={s.idea}
               key={idea.id}
-              data-id={idea.id}
-              data-title={idea.title}
+              draggable
+              onDragStart={(event) => handleDragStart(event, idea)}
             >
               <h3>{idea.title}</h3>
-              <Tag
-                color={idea.platform === "BOOKTOK" ? "blue" : "pink"}
-                label={idea.platform}
-              />
+              <Tag color={idea.platform === 'BOOKTOK' ? 'blue' : 'pink'} label={idea.platform} />
               <CloseButton onClick={() => handleDeleteIdeas(idea.id)} />
             </div>
           ))}
       </div>
     </Card>
-  );
+  )
 }
