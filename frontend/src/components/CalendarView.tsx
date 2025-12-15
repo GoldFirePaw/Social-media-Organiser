@@ -3,14 +3,17 @@ import { AddIdeaToCalendar } from '../api/addIdeaToCalendar'
 import { getScheduledPosts } from '../api/getScheduledPosts'
 import { putScheduledPost } from '../api/putScheduledPost'
 import { removeIdeaFromCalendar } from '../api/removeIdeaFromCalendar'
+import type { Idea } from '../api/getIdeas'
 import type { CalendarEvent } from '../types/calendar'
 import s from './CalendarView.module.css'
 
 type CalendarViewProps = {
   setIsDrawerOpen: (isOpen: boolean) => void
   setSelectedDate: (date: string | undefined) => void
-  setSelectedIdea: (idea: CalendarEvent | null) => void
+  setSelectedIdea: (idea: Idea | null) => void
+  setSelectedEvent: (event: CalendarEvent | null) => void
   setSelectedDateIdeas: (ideas: CalendarEvent[]) => void
+  refreshToken: number
 }
 
 const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -42,7 +45,9 @@ export function CalendarView({
   setIsDrawerOpen,
   setSelectedDate,
   setSelectedIdea,
+  setSelectedEvent,
   setSelectedDateIdeas,
+  refreshToken,
 }: CalendarViewProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
@@ -58,7 +63,7 @@ export function CalendarView({
     refreshScheduledPosts().catch((error) => {
       console.error('Failed to load scheduled posts', error)
     })
-  }, [refreshScheduledPosts])
+  }, [refreshScheduledPosts, refreshToken])
 
   const calendarDays = useMemo(() => buildCalendarDays(currentMonth), [currentMonth])
 
@@ -78,13 +83,15 @@ export function CalendarView({
 
   const openDrawer = (dateKey: string, idea?: CalendarEvent) => {
     setSelectedDate(dateKey)
+    const dayEvents = eventsByDate.get(dateKey) ?? []
+    setSelectedDateIdeas(dayEvents)
 
     if (idea) {
-      setSelectedIdea(idea)
-      setSelectedDateIdeas([])
+      setSelectedIdea(idea.idea)
+      setSelectedEvent(idea)
     } else {
       setSelectedIdea(null)
-      setSelectedDateIdeas(eventsByDate.get(dateKey) ?? [])
+      setSelectedEvent(null)
     }
 
     setIsDrawerOpen(true)
@@ -98,7 +105,7 @@ export function CalendarView({
 
     if (calendarEventId) {
       try {
-        await putScheduledPost(calendarEventId, isoDate)
+        await putScheduledPost(calendarEventId, { date: isoDate })
         setEvents((prev) =>
           prev.map((existing) =>
             existing.id === calendarEventId ? { ...existing, start: isoDate, date: isoDate } : existing,
@@ -120,6 +127,7 @@ export function CalendarView({
             title: newEvent.idea.title,
             start: newEvent.date,
             date: newEvent.date,
+            description: newEvent.description,
             idea: newEvent.idea,
           },
         ])

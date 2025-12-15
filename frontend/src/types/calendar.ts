@@ -5,5 +5,6 @@ export type CalendarEvent = {
   title: string
   start?: string
   date?: string
+  description?: string | null
   idea: Idea
 }

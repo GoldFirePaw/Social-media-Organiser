@@ -43,5 +43,23 @@ fastify.delete('/ideas', async (request) => {
   })
 })
 
-}
+  fastify.put('/ideas/:id', async (request) => {
+    const { id } = request.params as { id: string }
+    const { title, description, platform, status } = request.body as {
+      title: string
+      description?: string | null
+      platform: 'BOOKTOK' | 'DEVTOK'
+      status: 'IDEA' | 'PLANNED' | 'DONE'
+    }
 
+    return prisma.idea.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        platform,
+        status,
+      },
+    })
+  })
+}
