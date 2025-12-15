@@ -1,4 +1,6 @@
-export const AddIdeaToCalendar = async (date: string, ideaId: string) => {
+import type { CalendarEvent } from '../types/calendar'
+
+export const AddIdeaToCalendar = async (date: string, ideaId: string): Promise<CalendarEvent> => {
   const response = await fetch(`http://localhost:3001/scheduled-posts`, {
     method: "POST",
     headers: {

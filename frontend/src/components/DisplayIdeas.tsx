@@ -6,7 +6,11 @@ import s from './DisplayIdeas.module.css'
 import { CloseButton } from './reusableComponents/CloseButton'
 import type { Idea } from '../api/getIdeas'
 
-export function DisplayIdeas() {
+type DisplayIdeasProps = {
+  onIdeaSelect: (idea: Idea) => void
+}
+
+export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   const { ideas, error, refresh } = useIdeas()
 
   const handleDeleteIdeas = async (id: string) => {
@@ -34,10 +38,16 @@ export function DisplayIdeas() {
               key={idea.id}
               draggable
               onDragStart={(event) => handleDragStart(event, idea)}
+              onClick={() => onIdeaSelect(idea)}
             >
               <h3>{idea.title}</h3>
               <Tag color={idea.platform === 'BOOKTOK' ? 'blue' : 'pink'} label={idea.platform} />
-              <CloseButton onClick={() => handleDeleteIdeas(idea.id)} />
+              <CloseButton
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleDeleteIdeas(idea.id)
+                }}
+              />
             </div>
           ))}
       </div>
