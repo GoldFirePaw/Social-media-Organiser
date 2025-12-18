@@ -1,6 +1,7 @@
 .App {
   display: flex;
   min-height: 100vh;
+  padding: 20px;
 }
 
 .container {

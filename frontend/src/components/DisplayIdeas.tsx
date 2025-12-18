@@ -4,7 +4,6 @@ import { useIdeas } from "../hooks/useIdeas";
 import { deleteIdeas } from "../api/deleteIdeas";
 import { Tag } from "./reusableComponents/Tag";
 import s from "./DisplayIdeas.module.css";
-import { CloseButton } from "./reusableComponents/CloseButton";
 import type { Idea } from "../api/getIdeas";
 
 type DisplayIdeasProps = {
@@ -51,12 +50,20 @@ const formatPostCount = (count?: number) => {
   return `${safeCount} ${safeCount === 1 ? "post" : "posts"}`;
 };
 
+const formatLastPosted = (idea: Idea) => {
+  if (!idea.lastScheduledPostDate) {
+    return "Never scheduled yet";
+  }
+  const timestamp = new Date(idea.lastScheduledPostDate);
+  return `Last posted ${timestamp.toLocaleDateString()}`;
+};
+
 export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   const { ideas, error, refresh } = useIdeas();
   const [platformFilter, setPlatformFilter] = useState<PlatformFilterValue>("ALL");
   const [difficultyFilter, setDifficultyFilter] =
     useState<DifficultyFilterValue>("ALL");
-  const [sortOption, setSortOption] = useState<SortOptionValue>("LAST_POSTED");
+  const [sortOption, setSortOption] = useState<SortOptionValue>("TITLE_ASC");
 
   const handleDeleteIdeas = async (id: string) => {
     try {
@@ -121,36 +128,40 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   return (
     <Card title="Ideas">
       {error && <p>{error}</p>}
-      <div className={s.filters}>
+      <div className={s.filtersPanel}>
         <div className={s.filterGroup}>
           <span className={s.filterLabel}>Platform</span>
-          {platformFilters.map(({ label, value }) => (
-            <button
-              key={value}
-              type="button"
-              className={`${s.filterButton} ${
-                platformFilter === value ? s.filterButtonActive : ""
-              }`}
-              onClick={() => setPlatformFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
+          <div className={s.filterOptions}>
+            {platformFilters.map(({ label, value }) => (
+              <button
+                key={value}
+                type="button"
+                className={`${s.filterChip} ${
+                  platformFilter === value ? s.filterChipActive : ""
+                }`}
+                onClick={() => setPlatformFilter(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className={s.filterGroup}>
           <span className={s.filterLabel}>Difficulty</span>
-          {difficultyFilters.map(({ label, value }) => (
-            <button
-              key={value}
-              type="button"
-              className={`${s.filterButton} ${
-                difficultyFilter === value ? s.filterButtonActive : ""
-              }`}
-              onClick={() => setDifficultyFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
+          <div className={s.filterOptions}>
+            {difficultyFilters.map(({ label, value }) => (
+              <button
+                key={value}
+                type="button"
+                className={`${s.filterChip} ${
+                  difficultyFilter === value ? s.filterChipActive : ""
+                }`}
+                onClick={() => setDifficultyFilter(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className={s.sortRow}>
           <span className={s.filterLabel}>Order by</span>
@@ -167,46 +178,64 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
           </select>
         </div>
       </div>
+      <div className={s.listSummary}>
+        <div>
+          <p className={s.listCount}>
+            {sortedIdeas.length} {sortedIdeas.length === 1 ? "idea" : "ideas"}
+          </p>
+          <p className={s.listHint}>Drag an idea to the calendar or click to open it.</p>
+        </div>
+      </div>
       <div className={s.ideasContainer} role="list">
         {!error &&
           sortedIdeas.map((idea) => (
             <div
-              className={s.idea}
+              className={s.ideaCard}
               key={idea.id}
               role="listitem"
               draggable
               onDragStart={(event) => handleDragStart(event, idea)}
               onClick={() => onIdeaSelect(idea)}
             >
-              <div className={s.ideaText}>
-                <h3>{idea.title}</h3>
-                {idea.description && <p>{idea.description}</p>}
-              </div>
-              <div className={s.ideaMeta}>
-                <span className={s.postCountBadge}>
-                  {formatPostCount(idea.scheduledPostsCount)}
-                </span>
-                <span
-                  className={`${s.difficultyBadge} ${
-                    idea.difficulty === 1
-                      ? s.difficultyEasy
-                      : idea.difficulty === 2
-                      ? s.difficultyMedium
-                      : s.difficultyHard
-                  }`}
-                >
-                  {difficultyLabels[idea.difficulty]}
-                </span>
-                <Tag
-                  color={idea.platform === "BOOKTOK" ? "blue" : "pink"}
-                  label={idea.platform}
-                />
-                <CloseButton
+              <div className={s.ideaCardHeader}>
+                <div className={s.ideaText}>
+                  <h3>{idea.title}</h3>
+                  {idea.description && <p>{idea.description}</p>}
+                </div>
+                <button
+                  type="button"
+                  className={s.deleteButton}
+                  aria-label="Delete idea"
                   onClick={(event) => {
                     event.stopPropagation();
                     handleDeleteIdeas(idea.id);
                   }}
-                />
+                >
+                  &times;
+                </button>
+              </div>
+              <div className={s.ideaMeta}>
+                <div className={s.metaChips}>
+                  <span className={s.postCountBadge}>
+                    {formatPostCount(idea.scheduledPostsCount)}
+                  </span>
+                  <span
+                    className={`${s.difficultyBadge} ${
+                      idea.difficulty === 1
+                        ? s.difficultyEasy
+                        : idea.difficulty === 2
+                        ? s.difficultyMedium
+                        : s.difficultyHard
+                    }`}
+                  >
+                    {difficultyLabels[idea.difficulty]}
+                  </span>
+                  <Tag
+                    color={idea.platform === "BOOKTOK" ? "blue" : "pink"}
+                    label={idea.platform}
+                  />
+                </div>
+                <p className={s.metaHint}>{formatLastPosted(idea)}</p>
               </div>
             </div>
           ))}
