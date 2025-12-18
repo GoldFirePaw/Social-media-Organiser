@@ -47,12 +47,34 @@
     flex: 1;
     display: flex;
     gap: 0.5rem;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .fieldValue {
     flex: 1;
     line-height: 1.4;
+}
+
+.descriptionRichText {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    line-height: 1.5;
+}
+
+.descriptionParagraph {
+    margin: 0;
+}
+
+.descriptionList {
+    margin: 0;
+    padding-left: 1.25rem;
+    list-style: disc;
+}
+
+.emptyDescription {
+    color: #6b7280;
 }
 
 .editButton {
