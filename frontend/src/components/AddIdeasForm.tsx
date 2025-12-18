@@ -16,6 +16,7 @@ export function AddIdeasForm() {
       title: '',
       description: '',
       platform: 'BOOKTOK',
+      difficulty: 2,
     },
   })
 
@@ -43,6 +44,14 @@ export function AddIdeasForm() {
           <option value="BOOKTOK">BookTok</option>
           <option value="DEVTOK">DevTok</option>
         </select>
+        <label className={s.difficultyLabel}>
+          Difficulty
+          <select {...register('difficulty', { valueAsNumber: true })}>
+            <option value={1}>Easy (1)</option>
+            <option value={2}>Medium (2)</option>
+            <option value={3}>Hard (3)</option>
+          </select>
+        </label>
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Add Idea'}
         </button>

@@ -6,5 +6,6 @@ export type CalendarEvent = {
   start?: string
   date?: string
   description?: string | null
+  status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
   idea: Idea
 }

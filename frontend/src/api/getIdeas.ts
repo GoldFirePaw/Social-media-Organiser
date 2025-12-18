@@ -4,6 +4,7 @@ export type Idea = {
   description?: string | null
   platform: 'BOOKTOK' | 'DEVTOK'
   status: 'IDEA' | 'PLANNED' | 'DONE'
+  difficulty: 1 | 2 | 3
 }
 
 export async function getIdeas(): Promise<Idea[]> {

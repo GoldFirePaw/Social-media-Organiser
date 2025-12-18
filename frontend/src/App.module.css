@@ -4,5 +4,7 @@
 }
 
 .container {
-  width: 50%;
+  width: 100%;
+  display: flex;
+  gap: 30px;
 }

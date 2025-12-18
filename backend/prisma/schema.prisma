@@ -13,9 +13,10 @@ model Idea {
   description String?
   platform    Platform
   status      IdeaStatus  @default(IDEA)
+  difficulty  Int         @default(2)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  scheduledPosts ScheduledPost[]
+  scheduledPosts ScheduledPost[] @relation("IdeaToScheduledPost")
 }
 
 enum Platform {
@@ -30,13 +31,22 @@ enum IdeaStatus {
 }
 
 model ScheduledPost {
-  id        String   @id @default(uuid())
-  date      DateTime
+  id          String              @id @default(uuid())
+  date        DateTime
+  description String?
+  status      ScheduledPostStatus @default(NOT_STARTED)
 
-  ideaId    String
-  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId      String
+  idea        Idea                @relation("IdeaToScheduledPost", fields: [ideaId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
+  createdAt   DateTime            @default(now())
 
   @@unique([date, ideaId])
+}
+
+enum ScheduledPostStatus {
+  NOT_STARTED
+  PREPARING
+  READY
+  POSTED
 }

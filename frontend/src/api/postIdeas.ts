@@ -2,6 +2,7 @@ export type IdeaData = {
   title: string
   description?: string | null
   platform: 'BOOKTOK' | 'DEVTOK'
+  difficulty: 1 | 2 | 3
 }
 
 export const postIdeas = async (data: IdeaData) => {

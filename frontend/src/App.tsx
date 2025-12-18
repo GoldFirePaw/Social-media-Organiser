@@ -14,11 +14,9 @@ function App() {
     undefined
   );
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
-  const [selectedDateIdeas, setSelectedDateIdeas] = useState<CalendarEvent[]>(
-    []
-  );
-  const [calendarRefreshToken, setCalendarRefreshToken] = useState(0);
+  const [selectedDateIdeas, setSelectedDateIdeas] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [calendarRefreshToken, setCalendarRefreshToken] = useState(0);
 
   const handleEventSelect = (calendarEvent: CalendarEvent) => {
     const eventDate = calendarEvent.date ?? calendarEvent.start ?? null;
@@ -42,16 +40,18 @@ function App() {
             setSelectedDate={setSelectedDate}
             refreshToken={calendarRefreshToken}
           />
-          <DisplayIdeas
-            onIdeaSelect={(idea) => {
-              setSelectedDate(undefined);
-              setSelectedDateIdeas([]);
-              setSelectedIdea(idea);
-              setSelectedEvent(null);
-              setIsDrawerOpen(true);
-            }}
-          />
-          <AddIdeasForm />
+          <div>
+            <DisplayIdeas
+              onIdeaSelect={(idea) => {
+                setSelectedDate(undefined);
+                setSelectedDateIdeas([]);
+                setSelectedIdea(idea);
+                setSelectedEvent(null);
+                setIsDrawerOpen(true);
+              }}
+            />
+            <AddIdeasForm />
+          </div>
         </div>
         {isDrawerOpen && (
           <DrawerView
@@ -75,10 +75,13 @@ function App() {
               setCalendarRefreshToken((token) => token + 1);
             }}
             onEventUpdated={(updatedEvent) => {
-              const updatedDate = updatedEvent.date ?? updatedEvent.start ?? null;
+              const updatedDate =
+                updatedEvent.date ?? updatedEvent.start ?? null;
               setSelectedEvent(updatedEvent);
               setSelectedIdea(updatedEvent.idea);
-              setSelectedDate(updatedDate ? updatedDate.slice(0, 10) : undefined);
+              setSelectedDate(
+                updatedDate ? updatedDate.slice(0, 10) : undefined
+              );
               setSelectedDateIdeas((events) =>
                 events.map((event) =>
                   event.id === updatedEvent.id ? updatedEvent : event

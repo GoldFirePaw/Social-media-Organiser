@@ -2,6 +2,7 @@
 
 # dependencies
 */node_modules
+/node_modules
 /.pnp
 .pnp.js
 /frontend/dist
@@ -24,3 +25,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+ideas-export.json
+scheduled-posts-export.json
+backend/prisma/dev.db
