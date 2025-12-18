@@ -177,6 +177,17 @@ export const DrawerView = ({
   const getStatusLabel = (value?: ScheduledPostStatus) =>
     statusOptions.find((option) => option.value === value)?.label ?? 'Not started'
 
+  const formatLastPostedDate = (dateString?: string | null) => {
+    if (!dateString) {
+      return 'Never'
+    }
+    const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) {
+      return 'Never'
+    }
+    return date.toLocaleDateString()
+  }
+
   const renderDescriptionContent = (description?: string, emptyLabel = 'No description yet'): ReactNode => {
     if (!description || description.trim().length === 0) {
       return <span className={s.emptyDescription}>{emptyLabel}</span>
@@ -391,6 +402,18 @@ export const DrawerView = ({
               </div>
             </div>
           ))}
+          <div className={s.fieldRow}>
+            <div className={s.fieldLabel}>Times posted</div>
+            <div className={s.fieldContent}>
+              <span className={s.fieldValue}>{idea.scheduledPostsCount ?? 0}</span>
+            </div>
+          </div>
+          <div className={s.fieldRow}>
+            <div className={s.fieldLabel}>Last posted</div>
+            <div className={s.fieldContent}>
+              <span className={s.fieldValue}>{formatLastPostedDate(idea.lastScheduledPostDate)}</span>
+            </div>
+          </div>
         </div>
       )}
       {error && <p className={s.errorMessage}>{error}</p>}

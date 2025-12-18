@@ -5,6 +5,8 @@ export type Idea = {
   platform: 'BOOKTOK' | 'DEVTOK'
   status: 'IDEA' | 'PLANNED' | 'DONE'
   difficulty: 1 | 2 | 3
+  scheduledPostsCount?: number
+  lastScheduledPostDate?: string | null
 }
 
 export async function getIdeas(): Promise<Idea[]> {
