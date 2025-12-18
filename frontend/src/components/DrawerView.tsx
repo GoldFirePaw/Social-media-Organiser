@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { CloseButton } from './reusableComponents/CloseButton'
 import s from './DrawerView.module.css'
 import type { CalendarEvent } from '../types/calendar'
@@ -61,17 +62,17 @@ export const DrawerView = ({
   const [eventError, setEventError] = useState<string | null>(null)
 
   useEffect(() => {
-    setEditingField(null)
-    setValues(getInitialValues(idea))
-    setError(null)
-  }, [idea?.id])
+    setEditingField(null);
+    setValues(getInitialValues(idea));
+    setError(null);
+  }, [idea?.id, idea]);
 
   useEffect(() => {
-    setEventEditingField(null)
-    setEventDescription(selectedEvent?.description ?? '')
-    setEventStatus(selectedEvent?.status ?? 'NOT_STARTED')
-    setEventError(null)
-  }, [selectedEvent?.id])
+    setEventEditingField(null);
+    setEventDescription(selectedEvent?.description ?? "");
+    setEventStatus(selectedEvent?.status ?? "NOT_STARTED");
+    setEventError(null);
+  }, [selectedEvent?.id, selectedEvent]);
 
   const hasIdea = Boolean(idea)
 
@@ -175,6 +176,73 @@ export const DrawerView = ({
 
   const getStatusLabel = (value?: ScheduledPostStatus) =>
     statusOptions.find((option) => option.value === value)?.label ?? 'Not started'
+
+  const renderDescriptionContent = (description?: string, emptyLabel = 'No description yet'): ReactNode => {
+    if (!description || description.trim().length === 0) {
+      return <span className={s.emptyDescription}>{emptyLabel}</span>
+    }
+
+    const lines = description.split(/\r?\n/)
+    const nodes: ReactNode[] = []
+    let listItems: string[] = []
+    let paragraphLines: string[] = []
+    let keyIndex = 0
+
+    const flushParagraph = () => {
+      if (paragraphLines.length === 0) {
+        return
+      }
+      nodes.push(
+        <p key={`paragraph-${keyIndex++}`} className={s.descriptionParagraph}>
+          {paragraphLines.map((line, index) => (
+            <span key={index}>
+              {line}
+              {index < paragraphLines.length - 1 && <br />}
+            </span>
+          ))}
+        </p>,
+      )
+      paragraphLines = []
+    }
+
+    const flushList = () => {
+      if (listItems.length === 0) {
+        return
+      }
+      nodes.push(
+        <ul key={`list-${keyIndex++}`} className={s.descriptionList}>
+          {listItems.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>,
+      )
+      listItems = []
+    }
+
+    lines.forEach((rawLine) => {
+      const line = rawLine.trim()
+      if (!line) {
+        flushParagraph()
+        flushList()
+        return
+      }
+
+      const bulletMatch = line.match(/^[-*•]\s+(.*)$/)
+      if (bulletMatch) {
+        flushParagraph()
+        listItems.push(bulletMatch[1])
+        return
+      }
+
+      flushList()
+      paragraphLines.push(line)
+    })
+
+    flushParagraph()
+    flushList()
+
+    return nodes
+  }
 
   const editButtonsDisabled = !hasIdea || isSaving
 
@@ -312,7 +380,11 @@ export const DrawerView = ({
                   fieldForm(field)
                 ) : (
                   <>
-                    <span className={s.fieldValue}>{renderValue(field)}</span>
+                    {field === 'description' ? (
+                      <div className={s.descriptionRichText}>{renderDescriptionContent(idea.description)}</div>
+                    ) : (
+                      <span className={s.fieldValue}>{renderValue(field)}</span>
+                    )}
                     {editButton(field)}
                   </>
                 )}
@@ -357,11 +429,9 @@ export const DrawerView = ({
                 </div>
               ) : (
                 <>
-                  <span className={s.fieldValue}>
-                    {selectedEvent.description && selectedEvent.description.trim().length > 0
-                      ? selectedEvent.description
-                      : 'No notes yet'}
-                  </span>
+                  <div className={s.descriptionRichText}>
+                    {renderDescriptionContent(selectedEvent.description ?? '', 'No notes yet')}
+                  </div>
                   <button
                     type="button"
                     className={s.editButton}

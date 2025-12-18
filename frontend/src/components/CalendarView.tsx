@@ -233,29 +233,36 @@ export function CalendarView({
             >
               <span className={s.dateNumber}>{day.getDate()}</span>
               <div className={s.events}>
-                {dayEvents.map((eventItem) => (
-                  <button
-                    key={eventItem.id}
-                    className={`${s.event} ${
-                      eventItem.idea.platform === 'BOOKTOK' ? s.booktok : s.devtok
-                    }`}
-                    title={`${eventItem.idea.title} • ${getStatusLabel(eventItem.status)}`}
-                    draggable
-                    onDragStart={(dragEvent) => handleEventDragStart(eventItem, dragEvent)}
-                    onDragEnd={handleDragEnd}
-                    onClick={(clickEvent) => {
-                      clickEvent.stopPropagation()
-                      const date = (eventItem.date ?? eventItem.start)?.slice(0, 10) ?? dateKey
-                      openDrawer(date, eventItem)
-                    }}
-                  >
-                    <span className={`${s.statusDot} ${getStatusDotClass(eventItem.status)}`} aria-hidden="true" />
-                    <span className={s.eventTitle}>
-                      {eventItem.idea.title}
-                      {eventItem.description && <span className={s.eventDescription}>{eventItem.description}</span>}
-                    </span>
-                  </button>
-                ))}
+                {dayEvents.map((eventItem) => {
+                  const baseTitle = (eventItem.idea.title ?? eventItem.title ?? '').trim()
+                  const shouldShowDescription =
+                    Boolean(eventItem.description) && /^(review|unboxing)$/i.test(baseTitle)
+                  return (
+                    <button
+                      key={eventItem.id}
+                      className={`${s.event} ${
+                        eventItem.idea.platform === 'BOOKTOK' ? s.booktok : s.devtok
+                      }`}
+                      title={`${eventItem.idea.title} • ${getStatusLabel(eventItem.status)}`}
+                      draggable
+                      onDragStart={(dragEvent) => handleEventDragStart(eventItem, dragEvent)}
+                      onDragEnd={handleDragEnd}
+                      onClick={(clickEvent) => {
+                        clickEvent.stopPropagation()
+                        const date = (eventItem.date ?? eventItem.start)?.slice(0, 10) ?? dateKey
+                        openDrawer(date, eventItem)
+                      }}
+                    >
+                      <span className={`${s.statusDot} ${getStatusDotClass(eventItem.status)}`} aria-hidden="true" />
+                      <span className={s.eventTitle}>
+                        {eventItem.idea.title}
+                        {shouldShowDescription && (
+                          <span className={s.eventDescription}>{eventItem.description}</span>
+                        )}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )
