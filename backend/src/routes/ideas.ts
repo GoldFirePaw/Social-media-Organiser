@@ -2,13 +2,13 @@ import { FastifyInstance } from 'fastify'
 import { prisma } from '../prisma'
 
 export async function ideasRoutes(fastify: FastifyInstance) {
-  fastify.post('/ideas', async (request) => {
+  fastify.post("/ideas", async (request) => {
     const { title, description, platform, difficulty } = request.body as {
-      title: string
-      description?: string | null
-      platform: 'BOOKTOK' | 'DEVTOK'
-      difficulty?: number
-    }
+      title: string;
+      description?: string | null;
+      platform: "BOOKTOK" | "DEVTOK";
+      difficulty?: number;
+    };
 
     return prisma.idea.create({
       data: {
@@ -17,15 +17,15 @@ export async function ideasRoutes(fastify: FastifyInstance) {
         platform,
         difficulty: difficulty ?? 2,
       },
-    })
-  })
+    });
+  });
 
-  fastify.get('/ideas', async (request) => {
+  fastify.get("/ideas", async (request) => {
     const { platform, status, difficulty } = request.query as {
-      platform?: 'BOOKTOK' | 'DEVTOK'
-      status?: 'IDEA' | 'PLANNED' | 'DONE'
-      difficulty?: string
-    }
+      platform?: "BOOKTOK" | "DEVTOK";
+      status?: "IDEA" | "PLANNED" | "DONE";
+      difficulty?: string;
+    };
 
     return prisma.idea.findMany({
       where: {
@@ -34,38 +34,17 @@ export async function ideasRoutes(fastify: FastifyInstance) {
         difficulty: difficulty ? Number(difficulty) : undefined,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
-    })
-  })
+    });
+  });
 
-  fastify.delete('/ideas', async (request) => {
-    const { id } = request.query as { id: string }
+  fastify.delete("/ideas", async (request) => {
+    const { id } = request.query as { id: string };
 
     return prisma.idea.delete({
       where: { id },
-    })
-  })
-
-  fastify.put('/ideas/:id', async (request) => {
-    const { id } = request.params as { id: string }
-    const { title, description, platform, status, difficulty } = request.body as {
-      title: string
-      description?: string | null
-      platform: 'BOOKTOK' | 'DEVTOK'
-      status: 'IDEA' | 'PLANNED' | 'DONE'
-      difficulty?: number
-    }
-
-    return prisma.idea.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        platform,
-        status,
-        difficulty: difficulty ?? 2,
-      },
-    })
-  })
+    });
+  });
 }
+
