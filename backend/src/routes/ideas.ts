@@ -27,7 +27,7 @@ export async function ideasRoutes(fastify: FastifyInstance) {
       difficulty?: string;
     };
 
-    return prisma.idea.findMany({
+    const ideas = await prisma.idea.findMany({
       where: {
         platform,
         status,
@@ -36,7 +36,36 @@ export async function ideasRoutes(fastify: FastifyInstance) {
       orderBy: {
         createdAt: "desc",
       },
+      include: {
+        _count: {
+          select: {
+            scheduledPosts: true,
+          },
+        },
+        scheduledPosts: {
+          orderBy: {
+            date: "desc",
+          },
+          take: 1,
+          select: {
+            date: true,
+          },
+        },
+      },
     });
+
+    return ideas.map((idea) => ({
+      id: idea.id,
+      title: idea.title,
+      description: idea.description,
+      platform: idea.platform,
+      status: idea.status,
+      difficulty: idea.difficulty,
+      createdAt: idea.createdAt,
+      updatedAt: idea.updatedAt,
+      scheduledPostsCount: idea._count.scheduledPosts,
+      lastScheduledPostDate: idea.scheduledPosts[0]?.date ?? null,
+    }));
   });
 
   fastify.delete("/ideas", async (request) => {
@@ -46,5 +75,36 @@ export async function ideasRoutes(fastify: FastifyInstance) {
       where: { id },
     });
   });
-}
 
+  fastify.put("/ideas/:id", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { title, description, platform, status, difficulty } = request.body as {
+      title?: string;
+      description?: string | null;
+      platform?: "BOOKTOK" | "DEVTOK";
+      status?: "IDEA" | "PLANNED" | "DONE";
+      difficulty?: number;
+    };
+
+    try {
+      const updatedIdea = await prisma.idea.update({
+        where: { id },
+        data: {
+          title,
+          description,
+          platform,
+          status,
+          difficulty,
+        },
+      });
+      return updatedIdea;
+    } catch (error) {
+      reply.code(404);
+      return {
+        message: `Idea with id ${id} not found`,
+        error: "Not Found",
+        statusCode: 404,
+      };
+    }
+  });
+}

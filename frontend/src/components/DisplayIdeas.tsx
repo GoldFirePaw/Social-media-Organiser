@@ -34,11 +34,29 @@ const difficultyLabels: Record<Idea["difficulty"], string> = {
   3: "Hard",
 };
 
+const sortOptions = [
+  { label: "Last posted (newest)", value: "LAST_POSTED" },
+  { label: "Last posted (oldest)", value: "LAST_POSTED_OLDEST" },
+  { label: "Most posted", value: "MOST_POSTED" },
+  { label: "Least posted", value: "LEAST_POSTED" },
+  { label: "Difficulty: hard → easy", value: "DIFFICULTY_DESC" },
+  { label: "Difficulty: easy → hard", value: "DIFFICULTY_ASC" },
+  { label: "Title A → Z", value: "TITLE_ASC" },
+] as const;
+
+type SortOptionValue = (typeof sortOptions)[number]["value"];
+
+const formatPostCount = (count?: number) => {
+  const safeCount = count ?? 0;
+  return `${safeCount} ${safeCount === 1 ? "post" : "posts"}`;
+};
+
 export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   const { ideas, error, refresh } = useIdeas();
   const [platformFilter, setPlatformFilter] = useState<PlatformFilterValue>("ALL");
   const [difficultyFilter, setDifficultyFilter] =
     useState<DifficultyFilterValue>("ALL");
+  const [sortOption, setSortOption] = useState<SortOptionValue>("LAST_POSTED");
 
   const handleDeleteIdeas = async (id: string) => {
     try {
@@ -66,6 +84,39 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
       return matchesPlatform && matchesDifficulty;
     });
   }, [ideas, platformFilter, difficultyFilter]);
+
+  const sortedIdeas = useMemo(() => {
+    const copy = [...filteredIdeas];
+    const getCount = (idea: Idea) => idea.scheduledPostsCount ?? 0;
+    const getLastPost = (idea: Idea) => {
+      if (!idea.lastScheduledPostDate) {
+        return 0;
+      }
+      const time = new Date(idea.lastScheduledPostDate).getTime();
+      return Number.isNaN(time) ? 0 : time;
+    };
+
+    copy.sort((a, b) => {
+      switch (sortOption) {
+        case "MOST_POSTED":
+          return getCount(b) - getCount(a);
+        case "LEAST_POSTED":
+          return getCount(a) - getCount(b);
+        case "DIFFICULTY_DESC":
+          return b.difficulty - a.difficulty;
+        case "DIFFICULTY_ASC":
+          return a.difficulty - b.difficulty;
+        case "TITLE_ASC":
+          return a.title.localeCompare(b.title);
+        case "LAST_POSTED_OLDEST":
+          return getLastPost(a) - getLastPost(b);
+        case "LAST_POSTED":
+        default:
+          return getLastPost(b) - getLastPost(a);
+      }
+    });
+    return copy;
+  }, [filteredIdeas, sortOption]);
 
   return (
     <Card title="Ideas">
@@ -101,10 +152,24 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
             </button>
           ))}
         </div>
+        <div className={s.sortRow}>
+          <span className={s.filterLabel}>Order by</span>
+          <select
+            value={sortOption}
+            className={s.sortSelect}
+            onChange={(event) => setSortOption(event.target.value as SortOptionValue)}
+          >
+            {sortOptions.map(({ label, value }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className={s.ideasContainer} role="list">
         {!error &&
-          filteredIdeas.map((idea) => (
+          sortedIdeas.map((idea) => (
             <div
               className={s.idea}
               key={idea.id}
@@ -118,6 +183,9 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
                 {idea.description && <p>{idea.description}</p>}
               </div>
               <div className={s.ideaMeta}>
+                <span className={s.postCountBadge}>
+                  {formatPostCount(idea.scheduledPostsCount)}
+                </span>
                 <span
                   className={`${s.difficultyBadge} ${
                     idea.difficulty === 1
@@ -142,7 +210,7 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
               </div>
             </div>
           ))}
-        {!error && filteredIdeas.length === 0 && (
+        {!error && sortedIdeas.length === 0 && (
           <p className={s.emptyState}>No ideas for this filter.</p>
         )}
       </div>
