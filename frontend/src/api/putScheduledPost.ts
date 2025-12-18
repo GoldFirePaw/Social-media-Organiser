@@ -3,6 +3,7 @@ import type { CalendarEvent } from '../types/calendar'
 export type UpdateScheduledPostPayload = {
   date?: string
   description?: string | null
+  status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
 }
 
 export const putScheduledPost = async (postId: string, payload: UpdateScheduledPostPayload): Promise<CalendarEvent> => {

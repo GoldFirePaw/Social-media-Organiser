@@ -1,22 +1,107 @@
+.filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.filterGroup {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.filterLabel {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.filterButton {
+    border: 1px solid #d0d0d0;
+    background: #fff;
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.filterButtonActive {
+    background-color: #222;
+    color: #fff;
+    border-color: #222;
+}
+
 .ideasContainer {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-top: 20px;
+    margin-top: 15px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 
 .idea {
     display: flex;
-    align-items: center;
-    height: 30px;
+    justify-content: space-between;
+    gap: 15px;
     width: 100%;
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.ideaText {
+    flex: 1;
+}
+
+.ideaText h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+}
+
+.ideaText p {
+    margin: 0;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.ideaMeta {
+    display: flex;
+    align-items: center;
     gap: 10px;
 }
 
-.deleteButton {
-    background-color: transparent;
-    border: none;
-    color: red;
-    cursor: pointer;
-    font-size: 16px;
+.difficultyBadge {
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.difficultyEasy {
+    background-color: #ecfccb;
+    color: #3f6212;
+    border-color: #bef264;
+}
+
+.difficultyMedium {
+    background-color: #fef9c3;
+    color: #854d0e;
+    border-color: #fde047;
+}
+
+.difficultyHard {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.emptyState {
+    color: #666;
+    font-style: italic;
 }

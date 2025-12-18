@@ -5,6 +5,7 @@ export type UpdateIdeaPayload = {
   description?: string | null
   platform: 'BOOKTOK' | 'DEVTOK'
   status: 'IDEA' | 'PLANNED' | 'DONE'
+  difficulty: 1 | 2 | 3
 }
 
 export const updateIdea = async (id: string, payload: UpdateIdeaPayload): Promise<Idea> => {

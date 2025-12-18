@@ -3,10 +3,11 @@ import { prisma } from '../prisma'
 
 export async function scheduledPostsRoutes(fastify: FastifyInstance) {
   fastify.post('/scheduled-posts', async (request, reply) => {
-    const { ideaId, date, description } = request.body as {
+    const { ideaId, date, description, status } = request.body as {
       ideaId: string
       date: string
       description?: string | null
+      status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
     }
 
     if (!ideaId || !date) {
@@ -19,17 +20,15 @@ export async function scheduledPostsRoutes(fastify: FastifyInstance) {
           ideaId,
           date: new Date(date),
           description: description ?? null,
+          status: status ?? 'NOT_STARTED',
         },
         include: {
           idea: true,
         },
       })
     } catch (error: any) {
-      // Contrainte unique violée
       if (error.code === 'P2002') {
-        return reply
-          .status(409)
-          .send({ message: 'Idea already planned for this date' })
+        return reply.status(409).send({ message: 'Idea already planned for this date' })
       }
 
       throw error
@@ -49,21 +48,25 @@ export async function scheduledPostsRoutes(fastify: FastifyInstance) {
 
   fastify.put('/scheduled-posts/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const { date, description } = request.body as {
+    const { date, description, status } = request.body as {
       date?: string
       description?: string | null
+      status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
     }
 
-    if (!date && typeof description === 'undefined') {
+    if (!date && typeof description === 'undefined' && typeof status === 'undefined') {
       return reply.status(400).send({ message: 'Missing fields' })
     }
 
-    const data: { date?: Date; description?: string | null } = {}
+    const data: { date?: Date; description?: string | null; status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED' } = {}
     if (date) {
       data.date = new Date(date)
     }
     if (typeof description !== 'undefined') {
       data.description = description ?? null
+    }
+    if (typeof status !== 'undefined') {
+      data.status = status
     }
 
     try {

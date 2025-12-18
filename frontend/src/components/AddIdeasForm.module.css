@@ -3,3 +3,11 @@
     flex-direction: column;
     gap: 10px;
 }
+
+.difficultyLabel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}

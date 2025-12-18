@@ -7,20 +7,24 @@ import { updateIdea } from '../api/updateIdea'
 import { useIdeas } from '../hooks/useIdeas'
 import { putScheduledPost } from '../api/putScheduledPost'
 
-type EditableField = 'title' | 'description' | 'platform' | 'status'
+type EditableField = 'title' | 'description' | 'platform' | 'status' | 'difficulty'
 
 type EditableValues = {
   title: string
   description: string
   platform: Idea['platform']
   status: Idea['status']
+  difficulty: Idea['difficulty']
 }
+
+type ScheduledPostStatus = 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
 
 const getInitialValues = (idea: Idea | null): EditableValues => ({
   title: idea?.title ?? '',
   description: idea?.description ?? '',
   platform: idea?.platform ?? 'BOOKTOK',
   status: idea?.status ?? 'IDEA',
+  difficulty: idea?.difficulty ?? 2,
 })
 
 type DrawerViewProps = {
@@ -51,7 +55,8 @@ export const DrawerView = ({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [eventDescription, setEventDescription] = useState(selectedEvent?.description ?? '')
-  const [eventEditing, setEventEditing] = useState(false)
+  const [eventStatus, setEventStatus] = useState<ScheduledPostStatus>(selectedEvent?.status ?? 'NOT_STARTED')
+  const [eventEditingField, setEventEditingField] = useState<'notes' | 'status' | null>(null)
   const [eventSaving, setEventSaving] = useState(false)
   const [eventError, setEventError] = useState<string | null>(null)
 
@@ -62,8 +67,9 @@ export const DrawerView = ({
   }, [idea?.id])
 
   useEffect(() => {
-    setEventEditing(false)
+    setEventEditingField(null)
     setEventDescription(selectedEvent?.description ?? '')
+    setEventStatus(selectedEvent?.status ?? 'NOT_STARTED')
     setEventError(null)
   }, [selectedEvent?.id])
 
@@ -88,6 +94,7 @@ export const DrawerView = ({
         description: values.description.trim() === '' ? null : values.description.trim(),
         platform: values.platform,
         status: values.status,
+        difficulty: values.difficulty,
       }
       const updatedIdea = await updateIdea(idea.id, payload)
       await refresh()
@@ -116,11 +123,13 @@ export const DrawerView = ({
     try {
       const payload = {
         description: eventDescription.trim() === '' ? null : eventDescription.trim(),
+        status: eventStatus ?? 'NOT_STARTED',
       }
       const updatedEvent = await putScheduledPost(selectedEvent.id, payload)
       onEventUpdated?.(updatedEvent)
       setEventDescription(updatedEvent.description ?? '')
-      setEventEditing(false)
+      setEventStatus(updatedEvent.status ?? 'NOT_STARTED')
+      setEventEditingField(null)
     } catch (err) {
       setEventError(err instanceof Error ? err.message : 'Failed to update scheduled post')
     } finally {
@@ -130,7 +139,8 @@ export const DrawerView = ({
 
   const cancelEventEdit = () => {
     setEventDescription(selectedEvent?.description ?? '')
-    setEventEditing(false)
+    setEventStatus(selectedEvent?.status ?? 'NOT_STARTED')
+    setEventEditingField(null)
     setEventError(null)
   }
 
@@ -141,8 +151,30 @@ export const DrawerView = ({
     if (field === 'description') {
       return idea.description && idea.description.trim().length > 0 ? idea.description : 'No description yet'
     }
+    if (field === 'difficulty') {
+      return getDifficultyLabel(idea.difficulty)
+    }
     return idea[field]
   }
+
+  const difficultyOptions: { value: Idea['difficulty']; label: string }[] = [
+    { value: 1, label: 'Easy (1)' },
+    { value: 2, label: 'Medium (2)' },
+    { value: 3, label: 'Hard (3)' },
+  ]
+
+  const getDifficultyLabel = (value?: Idea['difficulty']) =>
+    difficultyOptions.find((option) => option.value === value)?.label ?? 'Medium (2)'
+
+  const statusOptions: { value: ScheduledPostStatus; label: string }[] = [
+    { value: 'NOT_STARTED', label: 'Not started' },
+    { value: 'PREPARING', label: 'Preparing' },
+    { value: 'READY', label: 'Ready to post' },
+    { value: 'POSTED', label: 'Posted' },
+  ]
+
+  const getStatusLabel = (value?: ScheduledPostStatus) =>
+    statusOptions.find((option) => option.value === value)?.label ?? 'Not started'
 
   const editButtonsDisabled = !hasIdea || isSaving
 
@@ -198,6 +230,25 @@ export const DrawerView = ({
       )
     }
 
+    if (field === 'difficulty') {
+      return (
+        <div className={s.fieldForm}>
+          <select
+            value={values.difficulty}
+            onChange={(event) => handleChange('difficulty', Number(event.target.value) as Idea['difficulty'])}
+            className={s.selectInput}
+          >
+            {difficultyOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {commonActions}
+        </div>
+      )
+    }
+
     if (field === 'platform') {
       return (
         <div className={s.fieldForm}>
@@ -236,6 +287,7 @@ export const DrawerView = ({
         { field: 'title' as const, label: 'Title' },
         { field: 'description' as const, label: 'Description' },
         { field: 'platform' as const, label: 'Platform' },
+        { field: 'difficulty' as const, label: 'Difficulty' },
         { field: 'status' as const, label: 'Status' },
       ] satisfies Array<{ field: EditableField; label: string }>,
     [],
@@ -243,7 +295,12 @@ export const DrawerView = ({
 
   return (
     <div className={s.drawerView}>
-      <CloseButton onClick={() => setIsDrawerOpen(false)} />
+      <CloseButton
+        onClick={(event) => {
+          event.preventDefault()
+          setIsDrawerOpen(false)
+        }}
+      />
       <div className={s.drawerHeader}>{date ?? 'Select a date'}</div>
       {idea && (
         <div className={s.ideaDetails}>
@@ -281,7 +338,7 @@ export const DrawerView = ({
           <div className={s.fieldRow}>
             <div className={s.fieldLabel}>Post notes</div>
             <div className={s.fieldContent}>
-              {eventEditing ? (
+              {eventEditingField === 'notes' ? (
                 <div className={s.fieldForm}>
                   <textarea
                     value={eventDescription}
@@ -308,9 +365,50 @@ export const DrawerView = ({
                   <button
                     type="button"
                     className={s.editButton}
-                    onClick={() => setEventEditing(true)}
+                    onClick={() => setEventEditingField('notes')}
                     disabled={eventSaving}
                     aria-label="Edit post notes"
+                  >
+                    ✏️
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          <div className={s.fieldRow}>
+            <div className={s.fieldLabel}>Post status</div>
+            <div className={s.fieldContent}>
+              {eventEditingField === 'status' ? (
+                <div className={s.fieldForm}>
+                  <select
+                    value={eventStatus}
+                    onChange={(event) => setEventStatus(event.target.value as ScheduledPostStatus)}
+                    className={s.selectInput}
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className={s.fieldActions}>
+                    <button type="button" onClick={handleEventSave} disabled={eventSaving} className={s.saveButton}>
+                      {eventSaving ? 'Saving…' : 'Save'}
+                    </button>
+                    <button type="button" onClick={cancelEventEdit} disabled={eventSaving}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span className={s.fieldValue}>{getStatusLabel(eventStatus ?? 'NOT_STARTED')}</span>
+                  <button
+                    type="button"
+                    className={s.editButton}
+                    onClick={() => setEventEditingField('status')}
+                    disabled={eventSaving}
+                    aria-label="Edit post status"
                   >
                     ✏️
                   </button>
@@ -336,6 +434,9 @@ export const DrawerView = ({
                 >
                   <strong>{calendarEvent.idea.title}</strong>
                   <p>{calendarEvent.description ?? calendarEvent.idea.description ?? 'No description yet'}</p>
+                  <span className={s.eventStatusText}>
+                    Status: {getStatusLabel(calendarEvent.status ?? 'NOT_STARTED')}
+                  </span>
                 </button>
               </li>
             ))}

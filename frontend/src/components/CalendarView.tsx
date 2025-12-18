@@ -25,6 +25,13 @@ const getDateKey = (date: Date) => {
 
 const toISODate = (dateKey: string) => `${dateKey}T00:00:00.000Z`
 
+const statusLabelMap: Record<NonNullable<CalendarEvent['status']>, string> = {
+  NOT_STARTED: 'Not started',
+  PREPARING: 'Preparing',
+  READY: 'Ready to post',
+  POSTED: 'Posted',
+}
+
 const buildCalendarDays = (reference: Date) => {
   const startOfMonth = new Date(reference.getFullYear(), reference.getMonth(), 1)
   const startDay = startOfMonth.getDay()
@@ -81,14 +88,14 @@ export function CalendarView({
     return map
   }, [events])
 
-  const openDrawer = (dateKey: string, idea?: CalendarEvent) => {
+  const openDrawer = (dateKey: string, event?: CalendarEvent) => {
     setSelectedDate(dateKey)
     const dayEvents = eventsByDate.get(dateKey) ?? []
     setSelectedDateIdeas(dayEvents)
 
-    if (idea) {
-      setSelectedIdea(idea.idea)
-      setSelectedEvent(idea)
+    if (event) {
+      setSelectedIdea(event.idea)
+      setSelectedEvent(event)
     } else {
       setSelectedIdea(null)
       setSelectedEvent(null)
@@ -128,6 +135,7 @@ export function CalendarView({
             start: newEvent.date,
             date: newEvent.date,
             description: newEvent.description,
+            status: newEvent.status,
             idea: newEvent.idea,
           },
         ])
@@ -168,6 +176,28 @@ export function CalendarView({
 
   const todayKey = getDateKey(new Date())
 
+  const getStatusDotClass = (status?: CalendarEvent['status']) => {
+    switch (status) {
+      case 'NOT_STARTED':
+        return s.statusDotNotStarted
+      case 'PREPARING':
+        return s.statusDotPreparing
+      case 'READY':
+        return s.statusDotReady
+      case 'POSTED':
+        return s.statusDotPosted
+      default:
+        return ''
+    }
+  }
+
+  const getStatusLabel = (status?: CalendarEvent['status']) => {
+    if (!status) {
+      return 'No status yet'
+    }
+    return statusLabelMap[status] ?? 'No status yet'
+  }
+
   return (
     <div className={s.calendarWrapper}>
       <header className={s.header}>
@@ -206,7 +236,10 @@ export function CalendarView({
                 {dayEvents.map((eventItem) => (
                   <button
                     key={eventItem.id}
-                    className={s.event}
+                    className={`${s.event} ${
+                      eventItem.idea.platform === 'BOOKTOK' ? s.booktok : s.devtok
+                    }`}
+                    title={`${eventItem.idea.title} • ${getStatusLabel(eventItem.status)}`}
                     draggable
                     onDragStart={(dragEvent) => handleEventDragStart(eventItem, dragEvent)}
                     onDragEnd={handleDragEnd}
@@ -216,7 +249,11 @@ export function CalendarView({
                       openDrawer(date, eventItem)
                     }}
                   >
-                    {eventItem.idea.title}
+                    <span className={`${s.statusDot} ${getStatusDotClass(eventItem.status)}`} aria-hidden="true" />
+                    <span className={s.eventTitle}>
+                      {eventItem.idea.title}
+                      {eventItem.description && <span className={s.eventDescription}>{eventItem.description}</span>}
+                    </span>
                   </button>
                 ))}
               </div>

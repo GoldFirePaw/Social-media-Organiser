@@ -78,17 +78,69 @@
 
 .event {
   border: none;
-  background-color: #eeeeee;
   color: #111111;
   border-radius: 6px;
   padding: 4px 6px;
   text-align: left;
   font-size: 0.85rem;
   cursor: pointer;
+  background-color: #eeeeee;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+}
+
+.eventTitle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eventDescription {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: inherit;
+  opacity: 0.9;
+  display: block;
 }
 
 .event:hover {
   background-color: #bfdbfe;
+}
+
+.event.booktok {
+  background-color: #dbeafe;
+  color: #1e3a8a;
+}
+
+.event.devtok {
+  background-color: #fce7f3;
+  color: #9d174d;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+}
+
+.statusDotNotStarted {
+  background-color: #f97316;
+}
+
+.statusDotPreparing {
+  background-color: #facc15;
+}
+
+.statusDotReady {
+  background-color: #14b8a6;
+}
+
+.statusDotPosted {
+  background-color: #22c55e;
 }
 
 .trashBin {

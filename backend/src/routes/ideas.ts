@@ -3,10 +3,11 @@ import { prisma } from '../prisma'
 
 export async function ideasRoutes(fastify: FastifyInstance) {
   fastify.post('/ideas', async (request) => {
-    const { title, description, platform } = request.body as {
+    const { title, description, platform, difficulty } = request.body as {
       title: string
-      description?: string
+      description?: string | null
       platform: 'BOOKTOK' | 'DEVTOK'
+      difficulty?: number
     }
 
     return prisma.idea.create({
@@ -14,42 +15,46 @@ export async function ideasRoutes(fastify: FastifyInstance) {
         title,
         description,
         platform,
+        difficulty: difficulty ?? 2,
       },
     })
   })
 
   fastify.get('/ideas', async (request) => {
-  const { platform, status } = request.query as {
-    platform?: 'BOOKTOK' | 'DEVTOK'
-    status?: 'IDEA' | 'PLANNED' | 'DONE'
-  }
+    const { platform, status, difficulty } = request.query as {
+      platform?: 'BOOKTOK' | 'DEVTOK'
+      status?: 'IDEA' | 'PLANNED' | 'DONE'
+      difficulty?: string
+    }
 
-  return prisma.idea.findMany({
-    where: {
-      platform,
-      status,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    return prisma.idea.findMany({
+      where: {
+        platform,
+        status,
+        difficulty: difficulty ? Number(difficulty) : undefined,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
   })
-})
 
-fastify.delete('/ideas', async (request) => {
-  const { id } = request.query as { id: string }
+  fastify.delete('/ideas', async (request) => {
+    const { id } = request.query as { id: string }
 
-  return prisma.idea.delete({
-    where: { id },
+    return prisma.idea.delete({
+      where: { id },
+    })
   })
-})
 
   fastify.put('/ideas/:id', async (request) => {
     const { id } = request.params as { id: string }
-    const { title, description, platform, status } = request.body as {
+    const { title, description, platform, status, difficulty } = request.body as {
       title: string
       description?: string | null
       platform: 'BOOKTOK' | 'DEVTOK'
       status: 'IDEA' | 'PLANNED' | 'DONE'
+      difficulty?: number
     }
 
     return prisma.idea.update({
@@ -59,6 +64,7 @@ fastify.delete('/ideas', async (request) => {
         description,
         platform,
         status,
+        difficulty: difficulty ?? 2,
       },
     })
   })
