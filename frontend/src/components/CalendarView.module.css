@@ -4,7 +4,7 @@
   padding: 16px;
   background-color: #ffffff;
   color: #111111;
-  width: 100%;
+  width: fit-content;
 }
 
 .header {

@@ -3,6 +3,7 @@ import { Card } from "./reusableComponents/Card";
 import { useIdeas } from "../hooks/useIdeas";
 import { deleteIdeas } from "../api/deleteIdeas";
 import { Tag } from "./reusableComponents/Tag";
+import { AddIdeasForm } from "./AddIdeasForm";
 import s from "./DisplayIdeas.module.css";
 import type { Idea } from "../api/getIdeas";
 
@@ -64,6 +65,8 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   const [difficultyFilter, setDifficultyFilter] =
     useState<DifficultyFilterValue>("ALL");
   const [sortOption, setSortOption] = useState<SortOptionValue>("TITLE_ASC");
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<"list" | "form">("list");
 
   const handleDeleteIdeas = async (id: string) => {
     try {
@@ -128,55 +131,85 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   return (
     <Card title="Ideas">
       {error && <p>{error}</p>}
-      <div className={s.filtersPanel}>
-        <div className={s.filterGroup}>
-          <span className={s.filterLabel}>Platform</span>
-          <div className={s.filterOptions}>
-            {platformFilters.map(({ label, value }) => (
-              <button
-                key={value}
-                type="button"
-                className={`${s.filterChip} ${
-                  platformFilter === value ? s.filterChipActive : ""
-                }`}
-                onClick={() => setPlatformFilter(value)}
+      <div className={s.tabs}>
+        <button
+          type="button"
+          className={`${s.tabButton} ${activeTab === "list" ? s.tabActive : ""}`}
+          onClick={() => setActiveTab("list")}
+        >
+          Ideas
+        </button>
+        <button
+          type="button"
+          className={`${s.tabButton} ${activeTab === "form" ? s.tabActive : ""}`}
+          onClick={() => setActiveTab("form")}
+        >
+          Add idea
+        </button>
+      </div>
+      {activeTab === "list" && (
+        <>
+      <div className={`${s.filtersPanel} ${filtersOpen ? s.filtersPanelOpen : s.filtersPanelClosed}`}>
+        <button
+          type="button"
+          className={s.filtersToggle}
+          onClick={() => setFiltersOpen((prev) => !prev)}
+          aria-expanded={filtersOpen}
+        >
+          Filters {filtersOpen ? "▴" : "▾"}
+        </button>
+        {filtersOpen && (
+          <>
+            <div className={s.filterGroup}>
+              <span className={s.filterLabel}>Platform</span>
+              <div className={s.filterOptions}>
+                {platformFilters.map(({ label, value }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`${s.filterChip} ${
+                      platformFilter === value ? s.filterChipActive : ""
+                    }`}
+                    onClick={() => setPlatformFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={s.filterGroup}>
+              <span className={s.filterLabel}>Difficulty</span>
+              <div className={s.filterOptions}>
+                {difficultyFilters.map(({ label, value }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`${s.filterChip} ${
+                      difficultyFilter === value ? s.filterChipActive : ""
+                    }`}
+                    onClick={() => setDifficultyFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={s.sortRow}>
+              <span className={s.filterLabel}>Order by</span>
+              <select
+                value={sortOption}
+                className={s.sortSelect}
+                onChange={(event) => setSortOption(event.target.value as SortOptionValue)}
               >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className={s.filterGroup}>
-          <span className={s.filterLabel}>Difficulty</span>
-          <div className={s.filterOptions}>
-            {difficultyFilters.map(({ label, value }) => (
-              <button
-                key={value}
-                type="button"
-                className={`${s.filterChip} ${
-                  difficultyFilter === value ? s.filterChipActive : ""
-                }`}
-                onClick={() => setDifficultyFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className={s.sortRow}>
-          <span className={s.filterLabel}>Order by</span>
-          <select
-            value={sortOption}
-            className={s.sortSelect}
-            onChange={(event) => setSortOption(event.target.value as SortOptionValue)}
-          >
-            {sortOptions.map(({ label, value }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
+                {sortOptions.map(({ label, value }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
       </div>
       <div className={s.listSummary}>
         <div>
@@ -186,14 +219,15 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
           <p className={s.listHint}>Drag an idea to the calendar or click to open it.</p>
         </div>
       </div>
-      <div className={s.ideasContainer} role="list">
-        {!error &&
-          sortedIdeas.map((idea) => (
-            <div
-              className={s.ideaCard}
-              key={idea.id}
-              role="listitem"
-              draggable
+      <div className={s.ideasContainer}>
+        <div className={s.ideasScroll} role="list">
+          {!error &&
+            sortedIdeas.map((idea) => (
+              <div
+                className={s.ideaCard}
+                key={idea.id}
+                role="listitem"
+                draggable
               onDragStart={(event) => handleDragStart(event, idea)}
               onClick={() => onIdeaSelect(idea)}
             >
@@ -238,11 +272,19 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
                 <p className={s.metaHint}>{formatLastPosted(idea)}</p>
               </div>
             </div>
-          ))}
+            ))}
+        </div>
         {!error && sortedIdeas.length === 0 && (
           <p className={s.emptyState}>No ideas for this filter.</p>
         )}
       </div>
+        </>
+      )}
+      {activeTab === "form" && (
+        <div className={s.formTabWrapper}>
+          <AddIdeasForm />
+        </div>
+      )}
     </Card>
   );
 }

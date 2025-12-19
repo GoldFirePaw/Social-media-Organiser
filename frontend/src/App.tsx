@@ -1,5 +1,4 @@
 import { DisplayIdeas } from "./components/DisplayIdeas";
-import { AddIdeasForm } from "./components/AddIdeasForm";
 import { IdeasProvider } from "./context/IdeasProvider";
 import { CalendarView } from "./components/CalendarView";
 import { useState } from "react";
@@ -32,15 +31,17 @@ function App() {
     <IdeasProvider>
       <div className={s.App}>
         <div className={s.container}>
-          <CalendarView
-            setSelectedDateIdeas={setSelectedDateIdeas}
-            setSelectedIdea={setSelectedIdea}
-            setSelectedEvent={setSelectedEvent}
-            setIsDrawerOpen={setIsDrawerOpen}
-            setSelectedDate={setSelectedDate}
-            refreshToken={calendarRefreshToken}
-          />
-          <div>
+          <div className={s.calendarColumn}>
+            <CalendarView
+              setSelectedDateIdeas={setSelectedDateIdeas}
+              setSelectedIdea={setSelectedIdea}
+              setSelectedEvent={setSelectedEvent}
+              setIsDrawerOpen={setIsDrawerOpen}
+              setSelectedDate={setSelectedDate}
+              refreshToken={calendarRefreshToken}
+            />
+          </div>
+          <aside className={s.sidebar}>
             <DisplayIdeas
               onIdeaSelect={(idea) => {
                 setSelectedDate(undefined);
@@ -50,8 +51,7 @@ function App() {
                 setIsDrawerOpen(true);
               }}
             />
-            <AddIdeasForm />
-          </div>
+          </aside>
         </div>
         {isDrawerOpen && (
           <DrawerView
