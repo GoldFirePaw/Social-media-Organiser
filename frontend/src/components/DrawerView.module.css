@@ -2,40 +2,261 @@
     position: fixed;
     top: 0;
     right: 0;
-    width: 40%;
-    height: 100%;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-    padding: 20px;
+    width: min(380px, 34%);
+    min-width: 320px;
+    height: calc(100% - 24px);
+    margin: 12px 0;
+    box-shadow: -10px 0 24px rgba(15, 23, 42, 0.08);
+    padding: 28px 26px;
     box-sizing: border-box;
     overflow-y: auto;
-    background-color: white;
-    border-radius: 5px 0 0 5px;
-    margin: 3px 0 3px 0;
+    background: #fcfbff;
+    border-left: 1px solid rgba(15, 23, 42, 0.04);
+    border-radius: 24px 0 0 24px;
 }
 
 .drawerHeader {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.15);
 }
 
+.drawerHeaderPrimary {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.drawerHeaderSecondary {
+    font-size: 0.9rem;
+    color: #f472b6;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
 .ideaDetails {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
     margin-bottom: 1.5rem;
+}
+
+.ideaSummary {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #ffffff 0%, #fef6ff 65%, #fffafb 100%);
+    border: 1px solid rgba(15, 23, 42, 0.04);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+    flex-direction: column;
+    row-gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ideaSummary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+}
+
+.ideaSummaryTop {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+}
+
+.ideaSummaryInfo {
+    max-width: 65%;
+    min-width: 260px;
+}
+
+.sectionLabel {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    margin: 0 0 0.35rem 0;
+}
+
+.ideaTitle {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #111827;
+    font-weight: 600;
+}
+
+.ideaSummaryTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.badge {
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.badgeBooktok {
+    background: #e0e7ff;
+    color: #312e81;
+}
+
+.badgeDevtok {
+    background: #ffe4f3;
+    color: #a21caf;
+}
+
+.badgeStatus {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.badgeDifficulty {
+    background: #fff4db;
+    color: #92400e;
+}
+
+.ideaSummaryStats {
+    display: flex;
+    gap: 5rem;
+    text-align: right;
+    color: #4b5563;
+    font-size: 0.8rem;
+}
+
+.ideaSummaryStats span {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.ideaSummaryStats strong {
+    display: block;
+    font-size: 1rem;
+    color: #0f172a;
+}
+
+.ideaDescriptionBlock {
+    margin-top: 0.6rem;
+    border-left: 3px solid rgba(236, 72, 153, 0.2);
+    padding-left: 0.75rem;
+    background: linear-gradient(90deg, rgba(236, 72, 153, 0.03), transparent 80%);
+    border-radius: 0 6px 6px 0;
+}
+
+.ideaEditForm {
+    width: 100%;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.formControl {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: #475467;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.formControl span {
+    font-weight: 600;
+}
+
+.ideaSummaryActions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.summaryButton {
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.18);
+    background: #fff;
+    padding: 0.35rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #0f172a;
+    transition: all 0.2s ease;
+}
+
+.summaryButton:hover:not(:disabled) {
+    border-color: #0f172a;
+}
+
+.summaryButtonPrimary {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+}
+
+.ideaSummaryStats > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.statsLabel {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+}
+
+.ideaSummaryStats strong {
+    font-size: 1.1rem;
+    color: #111827;
 }
 
 .scheduledSection {
     margin-bottom: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e0e0e0;
+    padding: 1.2rem 1.3rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    background: rgba(248, 250, 252, 0.95);
+    border-radius: 20px;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.sectionHeading {
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #0f172a;
+    margin-bottom: 0.75rem;
 }
 
 .fieldRow {
     display: flex;
     gap: 0.75rem;
     align-items: flex-start;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
 }
 
 .fieldLabel {
@@ -82,6 +303,8 @@
     background: transparent;
     cursor: pointer;
     font-size: 1rem;
+    color: #475467;
+    align-self: flex-start;
 }
 
 .editButton:disabled {
@@ -132,6 +355,11 @@
 
 .ideaList {
     margin-top: 1rem;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 1rem;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
 }
 
 .ideaList ul {
@@ -146,21 +374,32 @@
 .eventListButton {
     width: 100%;
     text-align: left;
-    border: 1px solid #ddd;
-    padding: 0.75rem;
-    border-radius: 6px;
-    background-color: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    background-color: #fff7fb;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    transition: transform 0.15s ease;
+}
+
+.eventListButton:hover {
+    transform: translateX(4px);
 }
 
 .eventListButtonActive {
-    border-color: #222;
+    border-color: #ec4899;
+    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.2);
 }
 
 .eventStatusText {
     font-size: 0.8rem;
-    color: #4b5563;
+    color: #ec4899;
+}
+.ideaDescriptionBlock {
+    margin-top: 0.85rem;
+    border-left: 3px solid rgba(236, 72, 153, 0.3);
+    padding-left: 0.75rem;
 }

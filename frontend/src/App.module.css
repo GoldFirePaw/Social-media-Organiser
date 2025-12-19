@@ -1,10 +1,26 @@
 .App {
   display: flex;
   min-height: 100vh;
+  padding: 20px 28px;
+  background: #fef7fb;
 }
 
 .container {
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.calendarColumn {
+  min-width: 0;
+}
+
+.sidebar {
   display: flex;
-  gap: 30px;
+  flex-direction: column;
+  gap: 24px;
 }

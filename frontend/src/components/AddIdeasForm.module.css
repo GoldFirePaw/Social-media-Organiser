@@ -1,13 +1,89 @@
 .form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 20px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #fff;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
 }
 
-.difficultyLabel {
+.formControl {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f472b6;
+}
+
+.formControl span {
     font-weight: 600;
+}
+
+.input,
+.textarea,
+.select {
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background-color: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    outline: none;
+}
+.textarea {
+    resize: vertical;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.formActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.submitButton {
+    border: none;
+    background: linear-gradient(120deg, #ec4899, #a855f7);
+    color: #fff;
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3);
+}
+
+.submitButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.success {
     font-size: 0.9rem;
+    color: #059669;
+    font-weight: 600;
+}
+
+.error {
+    color: #b91c1c;
+    font-size: 0.8rem;
 }
