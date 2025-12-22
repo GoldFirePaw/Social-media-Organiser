@@ -1,37 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { CloseButton } from "./reusableComponents/CloseButton";
 import s from "./DrawerView.module.css";
 import type { CalendarEvent } from "../types/calendar";
 import type { Idea } from "../api/getIdeas";
-import { updateIdea } from "../api/updateIdea";
-import { useIdeas } from "../hooks/useIdeas";
-import { putScheduledPost } from "../api/putScheduledPost";
+import {
+  useEditableIdea,
+  type EditableField,
+} from "../hooks/useEditableIdea";
+import { useEditableEvent } from "../hooks/useEditableEvent";
 
-type EditableField =
-  | "title"
-  | "description"
-  | "platform"
-  | "status"
-  | "difficulty";
-
-type EditableValues = {
-  title: string;
-  description: string;
-  platform: Idea["platform"];
-  status: Idea["status"];
-  difficulty: Idea["difficulty"];
-};
-
-type ScheduledPostStatus = "NOT_STARTED" | "PREPARING" | "READY" | "POSTED";
-
-const getInitialValues = (idea: Idea | null): EditableValues => ({
-  title: idea?.title ?? "",
-  description: idea?.description ?? "",
-  platform: idea?.platform ?? "BOOKTOK",
-  status: idea?.status ?? "IDEA",
-  difficulty: idea?.difficulty ?? 2,
-});
 
 const formatDrawerDate = (dateString?: string) => {
   if (!dateString) {
@@ -101,113 +79,34 @@ export const DrawerView = ({
   onEventSelect,
 }: DrawerViewProps) => {
   const hasDateIdeas = dateIdeas.length > 0;
-  const { refresh } = useIdeas();
-  const [isEditingIdea, setIsEditingIdea] = useState(false);
-  const [values, setValues] = useState<EditableValues>(() =>
-    getInitialValues(idea)
-  );
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [eventDescription, setEventDescription] = useState(
-    selectedEvent?.description ?? ""
-  );
-  const [eventStatus, setEventStatus] = useState<ScheduledPostStatus>(
-    selectedEvent?.status ?? "NOT_STARTED"
-  );
-  const [eventEditingField, setEventEditingField] = useState<
-    "notes" | "status" | null
-  >(null);
-  const [eventSaving, setEventSaving] = useState(false);
-  const [eventError, setEventError] = useState<string | null>(null);
+  const {
+    values,
+    isEditing,
+    isSaving,
+    error,
+    handleChange,
+    startEditing,
+    cancelEdit,
+    save,
+    clearError,
+  } = useEditableIdea(idea, {
+    onSave: (updatedIdea) => onIdeaUpdated?.(updatedIdea),
+  });
 
-  useEffect(() => {
-    setIsEditingIdea(false);
-    setValues(getInitialValues(idea));
-    setError(null);
-  }, [idea?.id, idea]);
-
-  useEffect(() => {
-    setEventEditingField(null);
-    setEventDescription(selectedEvent?.description ?? "");
-    setEventStatus(selectedEvent?.status ?? "NOT_STARTED");
-    setEventError(null);
-  }, [selectedEvent?.id, selectedEvent]);
-
-  const handleChange = <T extends EditableField>(
-    field: T,
-    newValue: EditableValues[T]
-  ) => {
-    setValues((prev) => ({
-      ...prev,
-      [field]: newValue,
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!idea) {
-      return;
-    }
-    setIsSaving(true);
-    setError(null);
-    try {
-      const payload = {
-        title: values.title.trim(),
-        description:
-          values.description.trim() === "" ? null : values.description.trim(),
-        platform: values.platform,
-        status: values.status,
-        difficulty: values.difficulty,
-      };
-      const updatedIdea = await updateIdea(idea.id, payload);
-      await refresh();
-      onIdeaUpdated?.(updatedIdea);
-      setValues(getInitialValues(updatedIdea));
-      setIsEditingIdea(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update idea");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const cancelEdit = () => {
-    setValues(getInitialValues(idea));
-    setIsEditingIdea(false);
-    setError(null);
-  };
-
-  const handleEventSave = async () => {
-    if (!selectedEvent) {
-      return;
-    }
-    setEventSaving(true);
-    setEventError(null);
-    try {
-      const payload = {
-        description:
-          eventDescription.trim() === "" ? null : eventDescription.trim(),
-        status: eventStatus ?? "NOT_STARTED",
-      };
-      const updatedEvent = await putScheduledPost(selectedEvent.id, payload);
-      onEventUpdated?.(updatedEvent);
-      setEventDescription(updatedEvent.description ?? "");
-      setEventStatus(updatedEvent.status ?? "NOT_STARTED");
-      setEventEditingField(null);
-    } catch (err) {
-      setEventError(
-        err instanceof Error ? err.message : "Failed to update scheduled post"
-      );
-    } finally {
-      setEventSaving(false);
-    }
-  };
-
-  const cancelEventEdit = () => {
-    setEventDescription(selectedEvent?.description ?? "");
-    setEventStatus(selectedEvent?.status ?? "NOT_STARTED");
-    setEventEditingField(null);
-    setEventError(null);
-  };
+  const {
+    description: eventDescription,
+    setDescription: setEventDescription,
+    status: eventStatus,
+    setStatus: setEventStatus,
+    editingField: eventEditingField,
+    setEditingField: setEventEditingField,
+    isSaving: eventSaving,
+    error: eventError,
+    cancel: cancelEventEdit,
+    save: handleEventSave,
+  } = useEditableEvent(selectedEvent, {
+    onSave: (updatedEvent) => onEventUpdated?.(updatedEvent),
+  });
 
   const difficultyOptions: { value: Idea["difficulty"]; label: string }[] = [
     { value: 1, label: "Easy (1)" },
@@ -477,9 +376,9 @@ export const DrawerView = ({
                 </div>
               </div>
             </div>
-            {isEditingIdea && renderIdeaForm()}
+            {isEditing && renderIdeaForm()}
             <div className={s.ideaSummaryActions}>
-              {isEditingIdea ? (
+              {isEditing ? (
                 <button
                   type="button"
                   className={s.summaryButton}
@@ -493,20 +392,16 @@ export const DrawerView = ({
                 type="button"
                 className={`${s.summaryButton} ${s.summaryButtonPrimary}`}
                 onClick={() => {
-                  if (!isEditingIdea) {
-                    setIsEditingIdea(true);
-                    setError(null);
+                  if (!isEditing) {
+                    clearError();
+                    startEditing();
                   } else {
-                    handleSave();
+                    save();
                   }
                 }}
                 disabled={isSaving}
               >
-                {isEditingIdea
-                  ? isSaving
-                    ? "Saving…"
-                    : "Save idea"
-                  : "Edit idea"}
+                {isEditing ? (isSaving ? "Saving…" : "Save idea") : "Edit idea"}
               </button>
             </div>
           </div>

@@ -1,0 +1,57 @@
+:root {
+  --color-page: #fdfbff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8f5fb;
+  --color-surface-tint: #fff7fb;
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-strong: rgba(15, 23, 42, 0.15);
+  --color-text: #0f172a;
+  --color-text-muted: #6b7280;
+  --color-accent: #0f172a;
+  --color-brand: #f472b6;
+  --color-brand-strong: #ec4899;
+  --color-brand-soft: #fde2f2;
+  --color-info-soft: #e0e7ff;
+  --color-info-strong: #1e3a8a;
+  --color-warning-soft: #fff4db;
+  --color-warning-strong: #a16207;
+  --color-success-soft: #e3f8ec;
+  --color-success-strong: #0f9c4f;
+  --color-danger-soft: #fde4e4;
+  --color-danger: #ef4444;
+  --status-not-started: #f97316;
+  --status-preparing: #facc15;
+  --status-ready: #14b8a6;
+  --status-posted: #22c55e;
+  --gradient-brand: linear-gradient(120deg, #fda4af, #fdba74);
+  --gradient-tab: linear-gradient(120deg, #fda4af, #c4b5fd);
+  --gradient-panel: linear-gradient(120deg, #fbf7ff, #fef3f2);
+  --gradient-cta: linear-gradient(120deg, #ec4899, #a855f7);
+  --shadow-card: 0 15px 35px rgba(15, 23, 42, 0.08);
+  --shadow-float: 0 25px 60px rgba(15, 23, 42, 0.12);
+  --radius-card: 18px;
+  --radius-pill: 999px;
+  font-family: 'Inter', 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--color-text);
+  background-color: var(--color-page);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-page);
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+button {
+  font-family: inherit;
+}

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Card } from "./reusableComponents/Card";
 import { useIdeas } from "../hooks/useIdeas";
 import { deleteIdeas } from "../api/deleteIdeas";
 import { Tag } from "./reusableComponents/Tag";
 import { AddIdeasForm } from "./AddIdeasForm";
+import { useIdeaFilters, type PlatformFilterValue, type DifficultyFilterValue, type SortOptionValue } from "../hooks/useIdeaFilters";
 import s from "./DisplayIdeas.module.css";
 import type { Idea } from "../api/getIdeas";
 
@@ -11,22 +12,18 @@ type DisplayIdeasProps = {
   onIdeaSelect: (idea: Idea) => void;
 };
 
-const platformFilters = [
+const platformFilters: { label: string; value: PlatformFilterValue }[] = [
   { label: "All", value: "ALL" },
   { label: "BookTok", value: "BOOKTOK" },
   { label: "DevTok", value: "DEVTOK" },
 ] as const;
 
-type PlatformFilterValue = (typeof platformFilters)[number]["value"];
-
-const difficultyFilters = [
+const difficultyFilters: { label: string; value: DifficultyFilterValue }[] = [
   { label: "All", value: "ALL" },
   { label: "Easy (1)", value: 1 },
   { label: "Medium (2)", value: 2 },
   { label: "Hard (3)", value: 3 },
 ] as const;
-
-type DifficultyFilterValue = (typeof difficultyFilters)[number]["value"];
 
 const difficultyLabels: Record<Idea["difficulty"], string> = {
   1: "Easy",
@@ -34,7 +31,7 @@ const difficultyLabels: Record<Idea["difficulty"], string> = {
   3: "Hard",
 };
 
-const sortOptions = [
+const sortOptions: { label: string; value: SortOptionValue }[] = [
   { label: "Last posted (newest)", value: "LAST_POSTED" },
   { label: "Last posted (oldest)", value: "LAST_POSTED_OLDEST" },
   { label: "Most posted", value: "MOST_POSTED" },
@@ -43,8 +40,6 @@ const sortOptions = [
   { label: "Difficulty: easy → hard", value: "DIFFICULTY_ASC" },
   { label: "Title A → Z", value: "TITLE_ASC" },
 ] as const;
-
-type SortOptionValue = (typeof sortOptions)[number]["value"];
 
 const formatPostCount = (count?: number) => {
   const safeCount = count ?? 0;
@@ -61,12 +56,17 @@ const formatLastPosted = (idea: Idea) => {
 
 export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
   const { ideas, error, refresh } = useIdeas();
-  const [platformFilter, setPlatformFilter] = useState<PlatformFilterValue>("ALL");
-  const [difficultyFilter, setDifficultyFilter] =
-    useState<DifficultyFilterValue>("ALL");
-  const [sortOption, setSortOption] = useState<SortOptionValue>("TITLE_ASC");
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"list" | "form">("list");
+  const {
+    platformFilter,
+    setPlatformFilter,
+    difficultyFilter,
+    setDifficultyFilter,
+    sortOption,
+    setSortOption,
+    sortedIdeas,
+  } = useIdeaFilters(ideas);
 
   const handleDeleteIdeas = async (id: string) => {
     try {
@@ -84,49 +84,6 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
     event.dataTransfer.setData("application/idea-id", idea.id);
     event.dataTransfer.effectAllowed = "copy";
   };
-
-  const filteredIdeas = useMemo(() => {
-    return ideas.filter((idea) => {
-      const matchesPlatform =
-        platformFilter === "ALL" || idea.platform === platformFilter;
-      const matchesDifficulty =
-        difficultyFilter === "ALL" || idea.difficulty === difficultyFilter;
-      return matchesPlatform && matchesDifficulty;
-    });
-  }, [ideas, platformFilter, difficultyFilter]);
-
-  const sortedIdeas = useMemo(() => {
-    const copy = [...filteredIdeas];
-    const getCount = (idea: Idea) => idea.scheduledPostsCount ?? 0;
-    const getLastPost = (idea: Idea) => {
-      if (!idea.lastScheduledPostDate) {
-        return 0;
-      }
-      const time = new Date(idea.lastScheduledPostDate).getTime();
-      return Number.isNaN(time) ? 0 : time;
-    };
-
-    copy.sort((a, b) => {
-      switch (sortOption) {
-        case "MOST_POSTED":
-          return getCount(b) - getCount(a);
-        case "LEAST_POSTED":
-          return getCount(a) - getCount(b);
-        case "DIFFICULTY_DESC":
-          return b.difficulty - a.difficulty;
-        case "DIFFICULTY_ASC":
-          return a.difficulty - b.difficulty;
-        case "TITLE_ASC":
-          return a.title.localeCompare(b.title);
-        case "LAST_POSTED_OLDEST":
-          return getLastPost(a) - getLastPost(b);
-        case "LAST_POSTED":
-        default:
-          return getLastPost(b) - getLastPost(a);
-      }
-    });
-    return copy;
-  }, [filteredIdeas, sortOption]);
 
   return (
     <Card title="Ideas">

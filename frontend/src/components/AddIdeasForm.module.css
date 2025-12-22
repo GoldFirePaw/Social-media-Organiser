@@ -4,9 +4,9 @@
     gap: 1rem;
     padding: 1.5rem;
     border-radius: 20px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    background: #fff;
-    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
 }
 
 .formControl {
@@ -16,7 +16,7 @@
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #f472b6;
+    color: var(--color-brand);
 }
 
 .formControl span {
@@ -27,19 +27,19 @@
 .textarea,
 .select {
     border-radius: 12px;
-    border: 1px solid rgba(15, 23, 42, 0.15);
+    border: 1px solid var(--color-border-strong);
     padding: 0.6rem 0.85rem;
     font-size: 0.95rem;
     font-family: inherit;
-    background-color: #fff;
+    background-color: var(--color-surface);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input:focus,
 .textarea:focus,
 .select:focus {
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 25%, transparent);
     outline: none;
 }
 .textarea {
@@ -62,13 +62,13 @@
 
 .submitButton {
     border: none;
-    background: linear-gradient(120deg, #ec4899, #a855f7);
+    background: var(--gradient-cta);
     color: #fff;
     padding: 0.6rem 1.4rem;
     border-radius: 999px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3);
+    box-shadow: 0 10px 20px color-mix(in srgb, var(--color-brand-strong) 35%, transparent);
 }
 
 .submitButton:disabled {
@@ -79,11 +79,11 @@
 
 .success {
     font-size: 0.9rem;
-    color: #059669;
+    color: var(--color-success-strong);
     font-weight: 600;
 }
 
 .error {
-    color: #b91c1c;
+    color: var(--color-danger);
     font-size: 0.8rem;
 }
