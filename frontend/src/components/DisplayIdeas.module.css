@@ -3,9 +3,9 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border-subtle);
     border-radius: 14px;
-    background: #fff;
+    background: var(--color-surface);
     box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
     margin-top: 0.75rem;
 }
@@ -22,7 +22,7 @@
     border: none;
     background: transparent;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-text);
     cursor: pointer;
     align-self: flex-end;
 }
@@ -43,14 +43,14 @@
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
-    color: #475467;
+    color: var(--color-text-muted);
     letter-spacing: 0.08em;
 }
 
 .filterChip {
     border-radius: 999px;
-    border: 1px solid #d1d5db;
-    background: #fff;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface);
     padding: 0.25rem 0.8rem;
     font-size: 0.85rem;
     cursor: pointer;
@@ -58,15 +58,15 @@
 }
 
 .filterChip:hover {
-    border-color: #0f172a;
-    color: #0f172a;
+    border-color: var(--color-text);
+    color: var(--color-text);
 }
 
 .filterChipActive {
-    background: linear-gradient(120deg, #fda4af, #fdba74);
+    background: var(--gradient-brand);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 6px 14px rgba(253, 186, 116, 0.3);
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--color-brand) 35%, transparent);
 }
 
 .sortRow {
@@ -78,8 +78,8 @@
 
 .sortSelect {
     border-radius: 8px;
-    border: 1px solid #d4d4d8;
-    background: #fff;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface);
     padding: 0.45rem 1rem;
     font-size: 0.9rem;
     min-width: 180px;
@@ -88,19 +88,19 @@
 .listSummary {
     margin-top: 1rem;
     padding-bottom: 0.6rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .listCount {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-text);
 }
 
 .listHint {
     margin: 0.15rem 0 0;
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.85rem;
 }
 
@@ -129,14 +129,14 @@
 }
 
 .ideasScroll::-webkit-scrollbar-thumb {
-    background: rgba(15, 23, 42, 0.2);
+    background: color-mix(in srgb, var(--color-text) 25%, transparent);
     border-radius: 999px;
 }
 
 .ideaCard {
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--color-border-subtle);
     border-radius: 14px;
-    background: #fff;
+    background: var(--color-surface);
     padding: 0.75rem 1rem;
     cursor: pointer;
     display: flex;
@@ -160,19 +160,19 @@
 .ideaText h3 {
     margin: 0;
     font-size: 1rem;
-    color: #111827;
+    color: var(--color-text);
 }
 
 .ideaText p {
     margin: 0.15rem 0 0;
-    color: #4b5563;
+    color: var(--color-text-muted);
     font-size: 0.9rem;
 }
 
 .deleteButton {
     border: none;
     background: transparent;
-    color: #9ca3af;
+    color: rgba(15, 23, 42, 0.3);
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -183,7 +183,7 @@
 }
 
 .deleteButton:hover {
-    color: #ef4444;
+    color: var(--color-danger);
 }
 
 .ideaMeta {
@@ -192,7 +192,7 @@
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
-    border-top: 1px solid rgba(15, 23, 42, 0.05);
+    border-top: 1px solid var(--color-border-subtle);
     padding-top: 0.45rem;
 }
 
@@ -204,8 +204,8 @@
 
 .postCountBadge {
     font-size: 0.75rem;
-    color: #1e3a8a;
-    background-color: #e0e7ff;
+    color: var(--color-info-strong);
+    background-color: var(--color-info-soft);
     border-radius: 999px;
     padding: 0.15rem 0.6rem;
     border: none;
@@ -221,28 +221,28 @@
 }
 
 .difficultyEasy {
-    background-color: #e3f8ec;
-    color: #137a35;
+    background-color: var(--color-success-soft);
+    color: var(--color-success-strong);
 }
 
 .difficultyMedium {
-    background-color: #fff4db;
-    color: #a16207;
+    background-color: var(--color-warning-soft);
+    color: var(--color-warning-strong);
 }
 
 .difficultyHard {
-    background-color: #fde4e4;
-    color: #b42318;
+    background-color: var(--color-danger-soft);
+    color: var(--color-danger);
 }
 
 .metaHint {
     margin: 0;
     font-size: 0.78rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .emptyState {
-    color: #475467;
+    color: var(--color-text-muted);
     font-style: italic;
 }
 .tabs {
@@ -251,8 +251,8 @@
     margin: 0.5rem 0 0.75rem;
     padding: 0.25rem;
     border-radius: 999px;
-    background: linear-gradient(120deg, #fbf7ff, #fef3f2);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--gradient-panel);
+    border: 1px solid var(--color-border-subtle);
 }
 
 .tabButton {
@@ -263,12 +263,12 @@
     background: transparent;
     cursor: pointer;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--color-text-muted);
     transition: all 0.2s ease;
 }
 
 .tabActive {
-    background: linear-gradient(120deg, #fda4af, #c4b5fd);
+    background: var(--gradient-tab);
     color: #fff;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }

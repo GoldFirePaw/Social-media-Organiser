@@ -7,9 +7,8 @@ type TagProps = {
 }
 
 export const Tag: React.FC<TagProps> = ({ label, color }) => {
-
   return (
-    <span className={s[color]}>
+    <span className={`${s.tag} ${s[color] ?? ""}`}>
       {label}
     </span>
   )
