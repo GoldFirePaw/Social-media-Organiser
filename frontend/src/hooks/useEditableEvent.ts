@@ -30,7 +30,7 @@ export function useEditableEvent(
     setStatus(event?.status ?? "NOT_STARTED");
     setEditingField(null);
     setError(null);
-  }, [event?.id]);
+  }, [event?.id, event?.description, event?.status]);
 
   const cancel = () => {
     setDescription(event?.description ?? "");

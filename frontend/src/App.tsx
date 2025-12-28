@@ -3,7 +3,7 @@ import { Login } from "./components/Login";
 import { ExportImport } from "./components/ExportImport";
 import { IdeasProvider } from "./context/IdeasProvider";
 import { CalendarView } from "./components/CalendarView";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DrawerView } from "./components/DrawerView";
 import s from "./App.module.css";
 import type { Idea } from "./api/getIdeas";
@@ -23,6 +23,9 @@ function App() {
   );
   const [calendarRefreshToken, setCalendarRefreshToken] = useState(0);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const bumpCalendarRefreshToken = useCallback(() => {
+    setCalendarRefreshToken((token) => token + 1);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -86,11 +89,13 @@ function App() {
               setIsDrawerOpen={setIsDrawerOpen}
               setSelectedDate={setSelectedDate}
               refreshToken={calendarRefreshToken}
+              onEventsChange={bumpCalendarRefreshToken}
             />
           </div>
           <aside className={s.sidebar}>
-            <ExportImport onImportComplete={() => setCalendarRefreshToken((t) => t + 1)} />
+            <ExportImport onImportComplete={bumpCalendarRefreshToken} />
             <DisplayIdeas
+              scheduledPostsRefreshToken={calendarRefreshToken}
               onIdeaSelect={(idea) => {
                 setSelectedDate(undefined);
                 setSelectedDateIdeas([]);
@@ -120,7 +125,7 @@ function App() {
                     : event
                 )
               );
-              setCalendarRefreshToken((token) => token + 1);
+              bumpCalendarRefreshToken();
             }}
             onEventUpdated={(updatedEvent) => {
               const updatedDate =
@@ -135,7 +140,7 @@ function App() {
                   event.id === updatedEvent.id ? updatedEvent : event
                 )
               );
-              setCalendarRefreshToken((token) => token + 1);
+              bumpCalendarRefreshToken();
             }}
             onEventSelect={handleEventSelect}
           />
