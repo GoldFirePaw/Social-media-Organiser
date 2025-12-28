@@ -75,6 +75,16 @@ npm run dev
 - Vite serves the app on `http://localhost:5173` by default.
 - Configure API calls (e.g., via `fetch`) to hit `http://localhost:3001`. Consider adding a Vite proxy in `vite.config.ts` if you need to avoid CORS in development.
 
+### Quick start (both servers)
+
+From the repository root you can launch backend and frontend together:
+
+```bash
+./scripts/dev.sh
+```
+
+The script installs missing dependencies and runs both dev servers in parallel. Stop them anytime with `Ctrl+C`.
+
 ### Linting & Builds
 
 - Frontend lint: `cd frontend && npm run lint`
