@@ -4,6 +4,7 @@ import { ideasRoutes } from "./routes/ideas";
 import cors from "@fastify/cors";
 import { scheduledPostsRoutes } from "./routes/scheduledPosts";
 import { authRoutes } from "./auth";
+import { exportRoutes } from "./routes/export";
 
 const fastify = Fastify({
   logger: true,
@@ -24,3 +25,4 @@ fastify.register(authRoutes);
 fastify.listen({ port: 3001 });
 fastify.register(ideasRoutes);
 fastify.register(scheduledPostsRoutes);
+fastify.register(exportRoutes);
