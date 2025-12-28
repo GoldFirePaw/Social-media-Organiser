@@ -14,6 +14,7 @@ type CalendarViewProps = {
   setSelectedEvent: (event: CalendarEvent | null) => void
   setSelectedDateIdeas: (ideas: CalendarEvent[]) => void
   refreshToken: number
+  onEventsChange?: () => void
 }
 
 const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -55,6 +56,7 @@ export function CalendarView({
   setSelectedEvent,
   setSelectedDateIdeas,
   refreshToken,
+  onEventsChange,
 }: CalendarViewProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
@@ -118,6 +120,7 @@ export function CalendarView({
             existing.id === calendarEventId ? { ...existing, start: isoDate, date: isoDate } : existing,
           ),
         )
+        onEventsChange?.()
       } catch (error) {
         console.error('Failed to update scheduled post', error)
       }
@@ -139,6 +142,7 @@ export function CalendarView({
             idea: newEvent.idea,
           },
         ])
+        onEventsChange?.()
       } catch (error) {
         console.error('Failed to add idea to calendar', error)
       }
@@ -163,6 +167,7 @@ export function CalendarView({
     try {
       await removeIdeaFromCalendar(draggingEventId)
       await refreshScheduledPosts()
+      onEventsChange?.()
     } catch (error) {
       console.error('Failed to remove idea from calendar', error)
     } finally {

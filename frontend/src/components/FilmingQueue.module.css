@@ -1,0 +1,196 @@
+.refreshButton {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.9rem;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.refreshButton:not(:disabled):hover {
+  background: var(--color-surface-tint);
+  border-color: var(--color-border-strong);
+}
+
+.summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.summaryLabel {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.summaryValue {
+  margin: 0.15rem 0 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.summaryHint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.error {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.85rem;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.queueList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.queueItem {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: var(--color-surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.queueHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.queueDate {
+  display: flex;
+  flex-direction: column;
+}
+
+.dateLabel {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.dateRelative {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.statusBadge {
+  border-radius: var(--radius-pill);
+  padding: 0.1rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.statusNotStarted {
+  background: color-mix(in srgb, var(--status-not-started) 12%, transparent);
+  color: var(--status-not-started);
+  border-color: color-mix(in srgb, var(--status-not-started) 30%, transparent);
+}
+
+.statusPreparing {
+  background: color-mix(in srgb, var(--status-preparing) 12%, transparent);
+  color: var(--status-preparing);
+  border-color: color-mix(in srgb, var(--status-preparing) 30%, transparent);
+}
+
+.statusReady {
+  background: color-mix(in srgb, var(--status-ready) 12%, transparent);
+  color: var(--status-ready);
+  border-color: color-mix(in srgb, var(--status-ready) 30%, transparent);
+}
+
+.statusPosted {
+  background: color-mix(in srgb, var(--status-posted) 12%, transparent);
+  color: var(--status-posted);
+  border-color: color-mix(in srgb, var(--status-posted) 30%, transparent);
+}
+
+.queueBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ideaTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.notes {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.embeddedWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
+
+.embeddedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.embeddedTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.embeddedScroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.embeddedScroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.embeddedScroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-text) 25%, transparent);
+  border-radius: 999px;
+}

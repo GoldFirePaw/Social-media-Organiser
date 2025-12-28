@@ -7,9 +7,11 @@ import { AddIdeasForm } from "./AddIdeasForm";
 import { useIdeaFilters, type PlatformFilterValue, type DifficultyFilterValue, type SortOptionValue } from "../hooks/useIdeaFilters";
 import s from "./DisplayIdeas.module.css";
 import type { Idea } from "../api/getIdeas";
+import { FilmingQueue } from "./FilmingQueue";
 
 type DisplayIdeasProps = {
   onIdeaSelect: (idea: Idea) => void;
+  scheduledPostsRefreshToken: number;
 };
 
 const platformFilters: { label: string; value: PlatformFilterValue }[] = [
@@ -54,10 +56,12 @@ const formatLastPosted = (idea: Idea) => {
   return `Last posted ${timestamp.toLocaleDateString()}`;
 };
 
-export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
+export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: DisplayIdeasProps) {
   const { ideas, error, refresh } = useIdeas();
   const [filtersOpen, setFiltersOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<"list" | "form">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "form" | "queue">(
+    "list"
+  );
   const {
     platformFilter,
     setPlatformFilter,
@@ -102,6 +106,13 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
           onClick={() => setActiveTab("form")}
         >
           Add idea
+        </button>
+        <button
+          type="button"
+          className={`${s.tabButton} ${activeTab === "queue" ? s.tabActive : ""}`}
+          onClick={() => setActiveTab("queue")}
+        >
+          To film
         </button>
       </div>
       {activeTab === "list" && (
@@ -240,6 +251,11 @@ export function DisplayIdeas({ onIdeaSelect }: DisplayIdeasProps) {
       {activeTab === "form" && (
         <div className={s.formTabWrapper}>
           <AddIdeasForm />
+        </div>
+      )}
+      {activeTab === "queue" && (
+        <div className={s.queueTabWrapper}>
+          <FilmingQueue refreshToken={scheduledPostsRefreshToken} variant="embedded" />
         </div>
       )}
     </Card>

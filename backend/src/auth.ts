@@ -29,100 +29,117 @@ function buildSetCookie(name: string, value: string, opts: { path?: string; http
 }
 
 export async function authRoutes(fastify: FastifyInstance) {
-  fastify.post('/login', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const body = request.body as { password?: string };
-      let password = body?.password ?? "";
+  fastify.post(
+    "/login",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const body = request.body as { password?: string };
+        let password = body?.password ?? "";
 
-      // Prevent DoS: limit password length
-      if (typeof password !== "string" || password.length > 1000) {
-        return reply.status(400).send({ message: "Invalid password format" });
-      }
-
-      const hash = process.env.AUTH_PASSWORD_HASH;
-      const plain = process.env.AUTH_PASSWORD;
-
-      if (!hash && !plain) {
-        return reply
-          .status(500)
-          .send({ message: "Authentication is not configured on the server." });
-      }
-
-      let valid = false;
-      if (hash) {
-        try {
-          valid = await argon2.verify(hash, password);
-        } catch {
-          valid = false;
+        // Prevent DoS: limit password length
+        if (typeof password !== "string" || password.length > 1000) {
+          return reply.status(400).send({ message: "Invalid password format" });
         }
-      } else {
-        // fallback: plaintext password in ENV (not recommended)
-        valid = password === plain;
+
+        const hash = process.env.AUTH_PASSWORD_HASH;
+        const plain = process.env.AUTH_PASSWORD;
+
+        if (!hash && !plain) {
+          return reply.status(500).send({
+            message: "Authentication is not configured on the server.",
+          });
+        }
+
+        let valid = false;
+        if (hash) {
+          try {
+            valid = await argon2.verify(hash, password);
+          } catch {
+            valid = false;
+          }
+        } else {
+          // fallback: plaintext password in ENV (not recommended)
+          valid = password === plain;
+        }
+
+        if (!valid) {
+          return reply.status(401).send({ message: "Invalid credentials" });
+        }
+
+        const secret = process.env.AUTH_JWT_SECRET || "dev_secret_change_me";
+        const token = jwt.sign({ role: "admin" }, secret, { expiresIn: "12h" });
+
+        const cookieStr = buildSetCookie("sm_session", token, {
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 12 * 60 * 60, // 12 hours
+        });
+
+        reply.header("Set-Cookie", cookieStr);
+
+        return { ok: true };
+      } catch (err) {
+        return reply.status(400).send({ message: "Invalid request" });
       }
+    }
+  );
 
-      if (!valid) {
-        return reply.status(401).send({ message: "Invalid credentials" });
-      }
-
-      const secret = process.env.AUTH_JWT_SECRET || "dev_secret_change_me";
-      const token = jwt.sign({ role: "admin" }, secret, { expiresIn: "12h" });
-
-      const cookieStr = buildSetCookie("sm_session", token, {
+  fastify.post(
+    "/logout",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const cookieStr = buildSetCookie("sm_session", "", {
+        path: "/",
         httpOnly: true,
         sameSite: "lax",
-        path: "/",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 12 * 60 * 60, // 12 hours
+        maxAge: null,
       });
-
       reply.header("Set-Cookie", cookieStr);
-
       return { ok: true };
-    } catch {
-      return reply.status(400).send({ message: "Invalid request" });
     }
-  })
+  );
 
-  fastify.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
-    const cookieStr = buildSetCookie('sm_session', '', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: null })
-    reply.header('Set-Cookie', cookieStr)
-    return { ok: true }
-  })
+  fastify.get(
+    "/auth/status",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const cookieHeader =
+        (request.headers && (request.headers as any).cookie) || null;
+      const cookies = parseCookies(cookieHeader);
+      const token = cookies["sm_session"];
+      const secret = process.env.AUTH_JWT_SECRET || "dev_secret_change_me";
 
-  fastify.get('/auth/status', async (request: FastifyRequest, reply: FastifyReply) => {
-    const cookieHeader = (request.headers && (request.headers as any).cookie) || null
-    const cookies = parseCookies(cookieHeader)
-    const token = cookies['sm_session']
-    const secret = process.env.AUTH_JWT_SECRET || 'dev_secret_change_me'
+      if (!token) {
+        return reply.status(401).send({ ok: false });
+      }
 
-    if (!token) {
-      return reply.status(401).send({ ok: false })
+      try {
+        jwt.verify(token, secret);
+        return { ok: true };
+      } catch (err) {
+        return reply.status(401).send({ ok: false });
+      }
     }
-
-    try {
-      jwt.verify(token, secret);
-      return { ok: true };
-    } catch {
-      return reply.status(401).send({ ok: false });
-    }
-  })
+  );
 }
 
 export function ensureAuth(request: FastifyRequest, reply: FastifyReply) {
-  const cookieHeader = (request.headers && (request.headers as any).cookie) || null
-  const cookies = parseCookies(cookieHeader)
-  const token = cookies['sm_session']
-  const secret = process.env.AUTH_JWT_SECRET || 'dev_secret_change_me'
+  const cookieHeader =
+    (request.headers && (request.headers as any).cookie) || null;
+  const cookies = parseCookies(cookieHeader);
+  const token = cookies["sm_session"];
+  const secret = process.env.AUTH_JWT_SECRET || "dev_secret_change_me";
 
   if (!token) {
-    reply.status(401).send({ message: 'Unauthorized' })
-    throw new Error('Unauthorized')
+    reply.status(401).send({ message: "Unauthorized" });
+    throw new Error("Unauthorized");
   }
 
   try {
     jwt.verify(token, secret);
     return true;
-  } catch {
+  } catch (err) {
     reply.status(401).send({ message: "Unauthorized" });
     throw new Error("Unauthorized");
   }
