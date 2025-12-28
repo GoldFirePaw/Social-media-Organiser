@@ -1,90 +1,149 @@
 import { FastifyInstance } from 'fastify'
 import { prisma } from '../prisma'
 
+function validateString(
+  value: unknown,
+  maxLength: number = 10000
+): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string")
+    throw new Error("Invalid input: expected string");
+  if (value.length > maxLength)
+    throw new Error(`Input exceeds maximum length of ${maxLength}`);
+  return value;
+}
+
+function validateEnum<T>(value: unknown, allowed: T[]): T {
+  if (!allowed.includes(value as T)) {
+    throw new Error(`Invalid value: must be one of ${allowed.join(", ")}`);
+  }
+  return value as T;
+}
+
 export async function scheduledPostsRoutes(fastify: FastifyInstance) {
-  fastify.post('/scheduled-posts', async (request, reply) => {
-    const { ideaId, date, description, status } = request.body as {
-      ideaId: string
-      date: string
-      description?: string | null
-      status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
-    }
-
-    if (!ideaId || !date) {
-      return reply.status(400).send({ message: 'Missing fields' })
-    }
-
+  fastify.post("/scheduled-posts", async (request, reply) => {
     try {
-      return await prisma.scheduledPost.create({
-        data: {
-          ideaId,
-          date: new Date(date),
-          description: description ?? null,
-          status: status ?? 'NOT_STARTED',
-        },
-        include: {
-          idea: true,
-        },
-      })
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        return reply.status(409).send({ message: 'Idea already planned for this date' })
+      const { ideaId, date, description, status } = request.body as {
+        ideaId: string;
+        date: string;
+        description?: string | null;
+        status?: "NOT_STARTED" | "PREPARING" | "READY" | "POSTED";
+      };
+
+      if (!ideaId || !date) {
+        return reply
+          .status(400)
+          .send({ message: "Missing fields: ideaId and date required" });
       }
 
-      throw error
-    }
-  })
+      const validDescription = description
+        ? validateString(description, 10000)
+        : null;
+      const validStatus = status
+        ? (validateEnum(status, ["NOT_STARTED", "PREPARING", "READY", "POSTED"]) as "NOT_STARTED" | "PREPARING" | "READY" | "POSTED")
+        : "NOT_STARTED";
 
-  fastify.get('/scheduled-posts', async () => {
+      try {
+        return await prisma.scheduledPost.create({
+          data: {
+            ideaId,
+            date: new Date(date),
+            description: validDescription,
+            status: validStatus,
+          },
+          include: {
+            idea: true,
+          },
+        });
+      } catch (error: any) {
+        if (error.code === "P2002") {
+          return reply
+            .status(409)
+            .send({ message: "Idea already planned for this date" });
+        }
+        throw error;
+      }
+    } catch (error: any) {
+      return reply
+        .status(400)
+        .send({ message: error.message || "Invalid input" });
+    }
+  });
+
+  fastify.get("/scheduled-posts", async () => {
     return prisma.scheduledPost.findMany({
       include: {
         idea: true,
       },
       orderBy: {
-        date: 'asc',
+        date: "asc",
       },
-    })
-  })
+    });
+  });
 
-  fastify.put('/scheduled-posts/:id', async (request, reply) => {
-    const { id } = request.params as { id: string }
-    const { date, description, status } = request.body as {
-      date?: string
-      description?: string | null
-      status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED'
-    }
-
-    if (!date && typeof description === 'undefined' && typeof status === 'undefined') {
-      return reply.status(400).send({ message: 'Missing fields' })
-    }
-
-    const data: { date?: Date; description?: string | null; status?: 'NOT_STARTED' | 'PREPARING' | 'READY' | 'POSTED' } = {}
-    if (date) {
-      data.date = new Date(date)
-    }
-    if (typeof description !== 'undefined') {
-      data.description = description ?? null
-    }
-    if (typeof status !== 'undefined') {
-      data.status = status
-    }
-
+  fastify.put("/scheduled-posts/:id", async (request, reply) => {
     try {
-      return await prisma.scheduledPost.update({
-        where: { id },
-        data,
-        include: {
-          idea: true,
-        },
-      })
-    } catch (error: any) {
-      if (error.code === 'P2025') {
-        return reply.status(404).send({ message: 'Scheduled post not found' })
+      const { id } = request.params as { id: string };
+      const { date, description, status } = request.body as {
+        date?: string;
+        description?: string | null;
+        status?: "NOT_STARTED" | "PREPARING" | "READY" | "POSTED";
+      };
+
+      if (
+        !date &&
+        typeof description === "undefined" &&
+        typeof status === "undefined"
+      ) {
+        return reply.status(400).send({ message: "Missing fields" });
       }
 
-      throw error
+      const data: any = {};
+      if (date) {
+        data.date = new Date(date);
+      }
+      if (typeof description !== "undefined") {
+        data.description = description
+          ? validateString(description, 10000)
+          : null;
+      }
+      if (typeof status !== "undefined") {
+        data.status = validateEnum(status, [
+          "NOT_STARTED",
+          "PREPARING",
+          "READY",
+          "POSTED",
+        ]) as "NOT_STARTED" | "PREPARING" | "READY" | "POSTED";
+      }
+
+      try {
+        return await prisma.scheduledPost.update({
+          where: { id },
+          data,
+          include: {
+            idea: true,
+          },
+        });
+      } catch (error: any) {
+        if (error.code === "P2025") {
+          return reply
+            .status(404)
+            .send({ message: "Scheduled post not found" });
+        }
+        if (error.code === "P2002") {
+          return reply
+            .status(409)
+            .send({ message: "Idea already planned for this date" });
+        }
+
+        throw error;
+      }
+    } catch (error: any) {
+      return reply
+        .status(400)
+        .send({ message: error.message || "Invalid input" });
     }
-  })
+  });
 
   fastify.delete('/scheduled-posts/:id', async (request, reply) => {
     const { id } = request.params as { id: string }

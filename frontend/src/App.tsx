@@ -1,7 +1,8 @@
 import { DisplayIdeas } from "./components/DisplayIdeas";
+import { Login } from "./components/Login";
 import { IdeasProvider } from "./context/IdeasProvider";
 import { CalendarView } from "./components/CalendarView";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DrawerView } from "./components/DrawerView";
 import s from "./App.module.css";
 import type { Idea } from "./api/getIdeas";
@@ -13,9 +14,33 @@ function App() {
     undefined
   );
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
-  const [selectedDateIdeas, setSelectedDateIdeas] = useState<CalendarEvent[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDateIdeas, setSelectedDateIdeas] = useState<CalendarEvent[]>(
+    []
+  );
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null
+  );
   const [calendarRefreshToken, setCalendarRefreshToken] = useState(0);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("http://localhost:3001/auth/status", {
+          credentials: "include",
+        });
+        if (!mounted) return;
+        setAuthenticated(res.ok);
+      } catch {
+        if (!mounted) return;
+        setAuthenticated(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleEventSelect = (calendarEvent: CalendarEvent) => {
     const eventDate = calendarEvent.date ?? calendarEvent.start ?? null;
@@ -26,6 +51,27 @@ function App() {
       setIsDrawerOpen(true);
     }
   };
+
+  if (authenticated === null) {
+    return <div style={{ padding: 20 }}>Checking authentication…</div>;
+  }
+
+  if (!authenticated) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+        }}
+      >
+        <div style={{ width: 360 }}>
+          <Login onLogin={() => setAuthenticated(true)} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <IdeasProvider>

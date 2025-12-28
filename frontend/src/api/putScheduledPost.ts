@@ -7,13 +7,17 @@ export type UpdateScheduledPostPayload = {
 }
 
 export const putScheduledPost = async (postId: string, payload: UpdateScheduledPostPayload): Promise<CalendarEvent> => {
-  const response = await fetch(`http://localhost:3001/scheduled-posts/${postId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    `http://localhost:3001/scheduled-posts/${postId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to update scheduled post");

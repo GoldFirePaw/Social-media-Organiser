@@ -6,6 +6,7 @@ export const AddIdeaToCalendar = async (date: string, ideaId: string): Promise<C
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify({ ideaId, date }),
   });
 
