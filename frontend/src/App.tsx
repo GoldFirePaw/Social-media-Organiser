@@ -1,5 +1,6 @@
 import { DisplayIdeas } from "./components/DisplayIdeas";
 import { Login } from "./components/Login";
+import { ExportImport } from "./components/ExportImport";
 import { IdeasProvider } from "./context/IdeasProvider";
 import { CalendarView } from "./components/CalendarView";
 import { useState, useEffect } from "react";
@@ -88,6 +89,7 @@ function App() {
             />
           </div>
           <aside className={s.sidebar}>
+            <ExportImport onImportComplete={() => setCalendarRefreshToken((t) => t + 1)} />
             <DisplayIdeas
               onIdeaSelect={(idea) => {
                 setSelectedDate(undefined);

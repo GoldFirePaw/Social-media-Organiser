@@ -1,62 +1,60 @@
-const fs = require('node:fs/promises')
+import fs from "node:fs/promises";
 
 async function importScheduledPosts() {
-  const posts = JSON.parse(await fs.readFile('backend/scheduled-posts-export.json', 'utf8'))
+  try {
+    // Prefer the combined export if present
+    let payload = null;
 
-  const ideasResponse = await fetch('http://localhost:3001/ideas')
-  if (!ideasResponse.ok) {
-    throw new Error(`Failed to fetch ideas: ${await ideasResponse.text()}`)
-  }
-  const ideas = await ideasResponse.json()
-  const ideaById = new Map(ideas.map((idea) => [idea.id, idea.id]))
-  const ideaByTitle = new Map(ideas.map((idea) => [idea.title.trim().toLowerCase(), idea.id]))
-
-  for (const post of posts) {
-    const fallbackTitle =
-      post.idea?.title ??
-      post.title ??
-      (post.ideaId ? ideas.find((idea) => idea.id === post.ideaId)?.title : undefined) ??
-      ''
-
-    const existingIdeaId =
-      post.ideaId && ideaById.has(post.ideaId)
-        ? post.ideaId
-        : ideaByTitle.get((fallbackTitle ?? '').trim().toLowerCase())
-
-    if (!existingIdeaId) {
-      console.warn(`Skipping scheduled post; no matching idea found for "${fallbackTitle || post.ideaId}"`)
-      continue
+    try {
+      const combined = JSON.parse(await fs.readFile("export.json", "utf8"));
+      payload = combined;
+    } catch (_) {
+      // fallback to separate files
+      let posts = [];
+      try {
+        posts = JSON.parse(
+          await fs.readFile("backend/scheduled-posts-export.json", "utf8")
+        );
+      } catch (_) {
+        // ignore
+      }
+      let ideas = [];
+      try {
+        ideas = JSON.parse(
+          await fs.readFile("backend/ideas-export.json", "utf8")
+        );
+      } catch (_) {
+        // ignore
+      }
+      payload = { ideas, scheduledPosts: posts };
     }
 
-    const response = await fetch('http://localhost:3001/scheduled-posts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ideaId: existingIdeaId,
-        date: post.date ?? post.start,
-        description: post.description ?? null,
-        status: post.status ?? 'NOT_STARTED',
-      }),
-    })
+    // Force replace mode
+    payload.mode = "replace";
 
-    if (!response.ok) {
-      console.error(
-        `Failed to import scheduled post for idea ${fallbackTitle || existingIdeaId}`,
-        await response.text(),
-      )
-    } else {
-      console.log(
-        `Imported scheduled post for idea ${fallbackTitle || existingIdeaId} on ${
-          (post.date ?? post.start)?.slice(0, 10) ?? 'unknown date'
-        }`,
-      )
+    console.log("Posting payload to /import (replace mode)");
+    const res = await fetch("http://localhost:3001/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.error("Import failed", res.status, text);
+      process.exitCode = 2;
+      return;
     }
+
+    try {
+      console.log("Import successful", JSON.parse(text));
+    } catch (_) {
+      console.log("Import successful", text);
+    }
+  } catch (err) {
+    console.error("Failed to import scheduled posts", err);
+    process.exitCode = 1;
   }
 }
 
-importScheduledPosts().catch((error) => {
-  console.error('Failed to import scheduled posts', error)
-  process.exitCode = 1
-})
+importScheduledPosts();

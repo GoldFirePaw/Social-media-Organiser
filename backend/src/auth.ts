@@ -78,7 +78,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       reply.header("Set-Cookie", cookieStr);
 
       return { ok: true };
-    } catch (err) {
+    } catch {
       return reply.status(400).send({ message: "Invalid request" });
     }
   })
@@ -100,10 +100,10 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      jwt.verify(token, secret)
-      return { ok: true }
-    } catch (err) {
-      return reply.status(401).send({ ok: false })
+      jwt.verify(token, secret);
+      return { ok: true };
+    } catch {
+      return reply.status(401).send({ ok: false });
     }
   })
 }
@@ -120,10 +120,10 @@ export function ensureAuth(request: FastifyRequest, reply: FastifyReply) {
   }
 
   try {
-    jwt.verify(token, secret)
-    return true
-  } catch (err) {
-    reply.status(401).send({ message: 'Unauthorized' })
-    throw new Error('Unauthorized')
+    jwt.verify(token, secret);
+    return true;
+  } catch {
+    reply.status(401).send({ message: "Unauthorized" });
+    throw new Error("Unauthorized");
   }
 }
