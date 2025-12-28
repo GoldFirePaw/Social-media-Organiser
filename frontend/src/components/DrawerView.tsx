@@ -8,7 +8,10 @@ import {
   useEditableIdea,
   type EditableField,
 } from "../hooks/useEditableIdea";
-import { useEditableEvent } from "../hooks/useEditableEvent";
+import {
+  useEditableEvent,
+  type ScheduledPostStatus,
+} from "../hooks/useEditableEvent";
 
 
 const formatDrawerDate = (dateString?: string) => {

@@ -3,7 +3,11 @@ import type { CalendarEvent } from "../types/calendar";
 import { putScheduledPost } from "../api/putScheduledPost";
 
 export type EventField = "notes" | "status";
-type ScheduledPostStatus = "NOT_STARTED" | "PREPARING" | "READY" | "POSTED";
+export type ScheduledPostStatus =
+  | "NOT_STARTED"
+  | "PREPARING"
+  | "READY"
+  | "POSTED";
 
 type UseEditableEventOptions = {
   onSave?: (event: CalendarEvent) => void;
