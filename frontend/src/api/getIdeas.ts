@@ -7,6 +7,7 @@ export type Idea = {
   difficulty: 1 | 2 | 3
   scheduledPostsCount?: number
   lastScheduledPostDate?: string | null
+  themes?: string[]
 }
 
 export async function getIdeas(): Promise<Idea[]> {

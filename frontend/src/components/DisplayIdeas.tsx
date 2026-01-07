@@ -8,6 +8,9 @@ import { useIdeaFilters, type PlatformFilterValue, type DifficultyFilterValue, t
 import s from "./DisplayIdeas.module.css";
 import type { Idea } from "../api/getIdeas";
 import { FilmingQueue } from "./FilmingQueue";
+import { useIdeaSimilarities } from "../hooks/useIdeaSimilarities";
+import { useIdeaThemes, useOverusedKeywords } from "../hooks/useIdeaThemes";
+import { updateIdea } from "../api/updateIdea";
 
 type DisplayIdeasProps = {
   onIdeaSelect: (idea: Idea) => void;
@@ -62,6 +65,9 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
   const [activeTab, setActiveTab] = useState<"list" | "form" | "queue">(
     "list"
   );
+  const similarIdeasMap = useIdeaSimilarities(ideas, 0.35);
+  const ideaThemes = useIdeaThemes(ideas);
+  const overused = useOverusedKeywords(ideas, 12);
   const {
     platformFilter,
     setPlatformFilter,
@@ -71,6 +77,16 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
     setSortOption,
     sortedIdeas,
   } = useIdeaFilters(ideas);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [themeInputs, setThemeInputs] = useState<Record<string, string>>({});
+  const [themeUpdatingId, setThemeUpdatingId] = useState<string | null>(null);
+  const allThemeNames = Array.from(
+    new Set(
+      ideas
+        .flatMap((idea) => idea.themes ?? [])
+        .filter((name): name is string => Boolean(name?.trim()))
+    )
+  ).sort((a, b) => a.localeCompare(b));
 
   const handleDeleteIdeas = async (id: string) => {
     try {
@@ -88,6 +104,51 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
     event.dataTransfer.setData("application/idea-id", idea.id);
     event.dataTransfer.effectAllowed = "copy";
   };
+
+  const persistThemes = async (idea: Idea, nextThemes: string[]) => {
+    setThemeUpdatingId(idea.id);
+    try {
+      const payload = {
+        title: idea.title,
+        description: idea.description ?? null,
+        platform: idea.platform,
+        status: idea.status,
+        difficulty: idea.difficulty,
+        themes: nextThemes,
+      };
+      await updateIdea(idea.id, payload);
+      await refresh();
+    } catch (error) {
+      console.error("Failed to update themes", error);
+    } finally {
+      setThemeUpdatingId(null);
+    }
+  };
+
+  const handleAddTheme = async (idea: Idea, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const current = idea.themes ?? [];
+    if (current.includes(trimmed)) {
+      setThemeInputs((prev) => ({ ...prev, [idea.id]: "" }));
+      return;
+    }
+    const next = [...current, trimmed];
+    await persistThemes(idea, next);
+    setThemeInputs((prev) => ({ ...prev, [idea.id]: "" }));
+  };
+
+  const handleRemoveTheme = async (idea: Idea, name: string) => {
+    const current = idea.themes ?? [];
+    const next = current.filter((t) => t !== name);
+    await persistThemes(idea, next);
+  };
+
+  const filteredIdeas = sortedIdeas.filter((idea) => {
+    if (!searchTerm.trim()) return true;
+    const haystack = `${idea.title} ${idea.description ?? ""}`.toLowerCase();
+    return haystack.includes(searchTerm.toLowerCase());
+  });
 
   return (
     <Card title="Ideas">
@@ -176,13 +237,26 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
                 ))}
               </select>
             </div>
+            <div className={s.searchRow}>
+              <label className={s.filterLabel} htmlFor="idea-search">
+                Search
+              </label>
+              <input
+                id="idea-search"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search titles or descriptions"
+                className={s.searchInput}
+              />
+            </div>
           </>
         )}
       </div>
       <div className={s.listSummary}>
         <div>
           <p className={s.listCount}>
-            {sortedIdeas.length} {sortedIdeas.length === 1 ? "idea" : "ideas"}
+            {filteredIdeas.length} {filteredIdeas.length === 1 ? "idea" : "ideas"}
           </p>
           <p className={s.listHint}>Drag an idea to the calendar or click to open it.</p>
         </div>
@@ -190,7 +264,7 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
       <div className={s.ideasContainer}>
         <div className={s.ideasScroll} role="list">
           {!error &&
-            sortedIdeas.map((idea) => (
+            filteredIdeas.map((idea) => (
               <div
                 className={s.ideaCard}
                 key={idea.id}
@@ -202,7 +276,7 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
               <div className={s.ideaCardHeader}>
                 <div className={s.ideaText}>
                   <h3>{idea.title}</h3>
-                  {idea.description && <p>{idea.description}</p>}
+                  {idea.description && <p className={s.ideaDescription}>{idea.description}</p>}
                 </div>
                 <button
                   type="button"
@@ -216,6 +290,99 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
                   &times;
                 </button>
               </div>
+              {(() => {
+                const explicitThemes = idea.themes ?? [];
+                const fallbackTheme = ideaThemes.get(idea.id);
+                const overusedEntry =
+                  explicitThemes[0]
+                    ? overused.map.get(explicitThemes[0])
+                    : fallbackTheme
+                      ? overused.map.get(fallbackTheme)
+                      : null;
+                return (
+                  <div className={s.themeEditor}>
+                    <div className={s.themeChips}>
+                      {explicitThemes.map((theme) => (
+                        <span key={theme} className={s.themeBadge}>
+                          {theme}
+                          <button
+                            type="button"
+                            aria-label={`Remove theme ${theme}`}
+                            className={s.themeRemove}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleRemoveTheme(idea, theme);
+                            }}
+                            disabled={themeUpdatingId === idea.id}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                      {!explicitThemes.length && fallbackTheme && (
+                        <span className={s.themeBadgeMuted}>Suggested: {fallbackTheme}</span>
+                      )}
+                    </div>
+                    <div className={s.themeInputRow}>
+                      <input
+                        type="text"
+                        list={`theme-suggestions-${idea.id}`}
+                        value={themeInputs[idea.id] ?? ""}
+                        onChange={(event) =>
+                          setThemeInputs((prev) => ({ ...prev, [idea.id]: event.target.value }))
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={async (event) => {
+                          event.stopPropagation();
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            await handleAddTheme(idea, themeInputs[idea.id] ?? "");
+                          }
+                        }}
+                        placeholder="Add theme tag"
+                        className={s.themeInput}
+                        disabled={themeUpdatingId === idea.id}
+                      />
+                      <button
+                        type="button"
+                        className={s.addThemeButton}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleAddTheme(idea, themeInputs[idea.id] ?? "");
+                        }}
+                        disabled={themeUpdatingId === idea.id}
+                      >
+                        Add
+                      </button>
+                      <datalist id={`theme-suggestions-${idea.id}`}>
+                        {allThemeNames.map((name) => (
+                          <option key={name} value={name} />
+                        ))}
+                      </datalist>
+                    </div>
+                    {overusedEntry && overusedEntry.ratio >= 0.2 && overusedEntry.count >= 2 && (
+                      <div className={s.themeWarning}>
+                        Appears {overusedEntry.count}× across ideas
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              {(() => {
+                const similars = similarIdeasMap.get(idea.id) ?? [];
+                if (!similars.length) return null;
+                const top = similars.slice(0, 2);
+                return (
+                  <div className={s.similarBadge}>
+                    <span className={s.similarLabel}>Possible duplicates</span>
+                    <ul className={s.similarList}>
+                      {top.map((entry) => (
+                        <li key={entry.idea.id}>{entry.idea.title}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
               <div className={s.ideaMeta}>
                 <div className={s.metaChips}>
                   <span className={s.postCountBadge}>
@@ -242,7 +409,7 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
             </div>
             ))}
         </div>
-        {!error && sortedIdeas.length === 0 && (
+        {!error && filteredIdeas.length === 0 && (
           <p className={s.emptyState}>No ideas for this filter.</p>
         )}
       </div>

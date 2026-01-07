@@ -66,6 +66,7 @@ type DrawerViewProps = {
   idea: Idea | null;
   dateIdeas: CalendarEvent[];
   selectedEvent: CalendarEvent | null;
+  plannerWidth?: number;
   onIdeaUpdated?: (idea: Idea) => void;
   onEventUpdated?: (updatedEvent: CalendarEvent) => void;
   onEventSelect?: (calendarEvent: CalendarEvent) => void;
@@ -77,10 +78,12 @@ export const DrawerView = ({
   idea,
   dateIdeas,
   selectedEvent,
+  plannerWidth,
   onIdeaUpdated,
   onEventUpdated,
   onEventSelect,
 }: DrawerViewProps) => {
+  const offsetRight = Math.max(0, (plannerWidth ?? 0) + 12);
   const hasDateIdeas = dateIdeas.length > 0;
   const {
     values,
@@ -315,7 +318,7 @@ export const DrawerView = ({
   const formattedDate = useMemo(() => formatDrawerDate(date), [date]);
 
   return (
-    <div className={s.drawerView}>
+    <div className={s.drawerView} style={{ right: offsetRight }}>
       <CloseButton
         onClick={(event) => {
           event.preventDefault();

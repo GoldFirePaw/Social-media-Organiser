@@ -20,14 +20,23 @@ function validateEnum<T>(value: unknown, allowed: T[]): T {
   return value as T;
 }
 
+const sanitizeThemeName = (value: unknown) => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.length > 100) throw new Error('Theme name too long')
+  return trimmed
+}
+
 export async function ideasRoutes(fastify: FastifyInstance) {
   fastify.post("/ideas", async (request, reply) => {
     try {
-      const { title, description, platform, difficulty } = request.body as {
+      const { title, description, platform, difficulty, themes } = request.body as {
         title: string;
         description?: string | null;
         platform: "BOOKTOK" | "DEVTOK";
         difficulty?: number;
+        themes?: string[];
       };
 
       const validTitle = validateString(title, 500);
@@ -43,14 +52,33 @@ export async function ideasRoutes(fastify: FastifyInstance) {
       const validDifficulty =
         difficulty && (difficulty < 1 || difficulty > 3) ? 2 : difficulty ?? 2;
 
-      return prisma.idea.create({
-        data: {
-          title: validTitle,
-          description: validDescription,
-          platform: validPlatform,
-          difficulty: validDifficulty,
-        },
-      });
+      const themeNames = (themes ?? []).map(sanitizeThemeName).filter((t): t is string => Boolean(t))
+
+      return prisma.$transaction(async (tx) => {
+        const themeRecords = await Promise.all(
+          themeNames.map((name) =>
+            tx.theme.upsert({
+              where: { name },
+              update: {},
+              create: { name },
+            }),
+          ),
+        )
+
+        return tx.idea.create({
+          data: {
+            title: validTitle,
+            description: validDescription,
+            platform: validPlatform,
+            difficulty: validDifficulty,
+            themes: themeRecords.length
+              ? {
+                  create: themeRecords.map((theme) => ({ themeId: theme.id })),
+                }
+              : undefined,
+          },
+        })
+      })
     } catch (error: any) {
       return reply
         .status(400)
@@ -80,6 +108,11 @@ export async function ideasRoutes(fastify: FastifyInstance) {
             scheduledPosts: true,
           },
         },
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
         scheduledPosts: {
           orderBy: {
             date: "desc",
@@ -103,6 +136,7 @@ export async function ideasRoutes(fastify: FastifyInstance) {
       updatedAt: idea.updatedAt,
       scheduledPostsCount: idea._count.scheduledPosts,
       lastScheduledPostDate: idea.scheduledPosts[0]?.date ?? null,
+      themes: idea.themes.map((link) => link.theme.name),
     }));
   });
 
@@ -117,13 +151,14 @@ export async function ideasRoutes(fastify: FastifyInstance) {
   fastify.put("/ideas/:id", async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
-      const { title, description, platform, status, difficulty } =
+      const { title, description, platform, status, difficulty, themes } =
         request.body as {
           title?: string;
           description?: string | null;
           platform?: "BOOKTOK" | "DEVTOK";
           status?: "IDEA" | "PLANNED" | "DONE";
           difficulty?: number;
+          themes?: string[];
         };
 
       if (!id) {
@@ -157,10 +192,33 @@ export async function ideasRoutes(fastify: FastifyInstance) {
         data.difficulty = difficulty;
       }
 
-      const updatedIdea = await prisma.idea.update({
-        where: { id },
-        data,
-      });
+      const themeNames = Array.isArray(themes)
+        ? themes.map(sanitizeThemeName).filter((t): t is string => Boolean(t))
+        : undefined
+
+      const updatedIdea = await prisma.$transaction(async (tx) => {
+        let themeSet = undefined as { set: { themeId: string }[] } | undefined
+        if (themeNames) {
+          const records = await Promise.all(
+            themeNames.map((name) =>
+              tx.theme.upsert({
+                where: { name },
+                update: {},
+                create: { name },
+              }),
+            ),
+          )
+          themeSet = { set: records.map((theme) => ({ themeId: theme.id })) }
+        }
+
+        return tx.idea.update({
+          where: { id },
+          data: {
+            ...data,
+            themes: themeSet,
+          },
+        })
+      })
       return updatedIdea;
     } catch (error: any) {
       if ((error as any).code === "P2025") {
@@ -171,4 +229,20 @@ export async function ideasRoutes(fastify: FastifyInstance) {
         .send({ message: error.message || "Invalid input" });
     }
   });
+
+  fastify.get('/themes', async () => {
+    const themes = await prisma.theme.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: { ideas: true },
+        },
+      },
+    })
+    return themes.map((theme) => ({
+      id: theme.id,
+      name: theme.name,
+      usageCount: theme._count.ideas,
+    }))
+  })
 }

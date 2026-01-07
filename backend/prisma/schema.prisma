@@ -17,6 +17,7 @@ model Idea {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   scheduledPosts ScheduledPost[] @relation("IdeaToScheduledPost")
+  themes      IdeaTheme[]
 }
 
 enum Platform {
@@ -42,6 +43,22 @@ model ScheduledPost {
   createdAt   DateTime            @default(now())
 
   @@unique([date, ideaId])
+}
+
+model Theme {
+  id        String      @id @default(uuid())
+  name      String      @unique
+  createdAt DateTime    @default(now())
+  ideas     IdeaTheme[]
+}
+
+model IdeaTheme {
+  ideaId  String
+  themeId String
+  idea    Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  theme   Theme  @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([ideaId, themeId])
 }
 
 enum ScheduledPostStatus {
