@@ -3,7 +3,7 @@ import { Login } from "./components/Login";
 import { ExportImport } from "./components/ExportImport";
 import { IdeasProvider } from "./context/IdeasProvider";
 import { CalendarView } from "./components/CalendarView";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DrawerView } from "./components/DrawerView";
 import s from "./App.module.css";
 import type { Idea } from "./api/getIdeas";
@@ -23,9 +23,40 @@ function App() {
   );
   const [calendarRefreshToken, setCalendarRefreshToken] = useState(0);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [panelWidth, setPanelWidth] = useState(420);
+  const [isResizing, setIsResizing] = useState(false);
   const bumpCalendarRefreshToken = useCallback(() => {
     setCalendarRefreshToken((token) => token + 1);
   }, []);
+
+  const panelWidthLimits = useMemo(
+    () => ({
+      min: 340,
+      max: 760,
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMove = (event: MouseEvent) => {
+      const maxWidth = Math.min(panelWidthLimits.max, window.innerWidth * 0.95);
+      const newWidth = window.innerWidth - event.clientX;
+      setPanelWidth(Math.min(Math.max(newWidth, panelWidthLimits.min), maxWidth));
+    };
+
+    const stopResizing = () => setIsResizing(false);
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", stopResizing);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, panelWidthLimits.max, panelWidthLimits.min]);
 
   useEffect(() => {
     let mounted = true;
@@ -60,6 +91,22 @@ function App() {
     return <div style={{ padding: 20 }}>Checking authentication…</div>;
   }
 
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:3001/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // ignore network errors here; we'll still clear local state
+    } finally {
+      localStorage.removeItem("sm_logged_in");
+      setAuthenticated(false);
+      setIsDrawerOpen(false);
+      setIsPanelOpen(false);
+    }
+  };
+
   if (!authenticated) {
     return (
       <div
@@ -81,6 +128,20 @@ function App() {
     <IdeasProvider>
       <div className={s.App}>
         <div className={s.container}>
+          <div className={s.topBar}>
+            <div className={s.panelToggleBar}>
+              <button
+                type="button"
+                className={s.panelToggle}
+                onClick={() => setIsPanelOpen((prev) => !prev)}
+              >
+                {isPanelOpen ? "Close planner" : "Open planner"}
+              </button>
+            </div>
+            <button type="button" className={s.logoutButton} onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
           <div className={s.calendarColumn}>
             <CalendarView
               setSelectedDateIdeas={setSelectedDateIdeas}
@@ -92,7 +153,28 @@ function App() {
               onEventsChange={bumpCalendarRefreshToken}
             />
           </div>
-          <aside className={s.sidebar}>
+        </div>
+        <aside className={`${s.drawer} ${isPanelOpen ? s.drawerOpen : ""}`} style={{ width: `${panelWidth}px` }}>
+          <div
+            className={s.drawerResizeHandle}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              setIsResizing(true);
+            }}
+            role="presentation"
+          />
+          <div className={s.drawerHeader}>
+            <div className={s.drawerTitle}>Planner</div>
+            <button
+              type="button"
+              className={s.drawerClose}
+              onClick={() => setIsPanelOpen(false)}
+              aria-label="Close planner"
+            >
+              ✕
+            </button>
+          </div>
+          <div className={s.drawerContent}>
             <ExportImport onImportComplete={bumpCalendarRefreshToken} />
             <DisplayIdeas
               scheduledPostsRefreshToken={calendarRefreshToken}
@@ -104,8 +186,8 @@ function App() {
                 setIsDrawerOpen(true);
               }}
             />
-          </aside>
-        </div>
+          </div>
+        </aside>
         {isDrawerOpen && (
           <DrawerView
             setIsDrawerOpen={setIsDrawerOpen}
@@ -113,6 +195,7 @@ function App() {
             idea={selectedIdea}
             dateIdeas={selectedDateIdeas}
             selectedEvent={selectedEvent}
+            plannerWidth={isPanelOpen ? panelWidth : 0}
             onIdeaUpdated={(updatedIdea) => {
               setSelectedIdea(updatedIdea);
               setSelectedEvent((event) =>

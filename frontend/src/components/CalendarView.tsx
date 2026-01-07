@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AddIdeaToCalendar } from '../api/addIdeaToCalendar'
 import { getScheduledPosts } from '../api/getScheduledPosts'
@@ -8,11 +9,11 @@ import type { CalendarEvent } from '../types/calendar'
 import s from './CalendarView.module.css'
 
 type CalendarViewProps = {
-  setIsDrawerOpen: (isOpen: boolean) => void
-  setSelectedDate: (date: string | undefined) => void
-  setSelectedIdea: (idea: Idea | null) => void
-  setSelectedEvent: (event: CalendarEvent | null) => void
-  setSelectedDateIdeas: (ideas: CalendarEvent[]) => void
+  setIsDrawerOpen: Dispatch<SetStateAction<boolean>>
+  setSelectedDate: Dispatch<SetStateAction<string | undefined>>
+  setSelectedIdea: Dispatch<SetStateAction<Idea | null>>
+  setSelectedEvent: Dispatch<SetStateAction<CalendarEvent | null>>
+  setSelectedDateIdeas: Dispatch<SetStateAction<CalendarEvent[]>>
   refreshToken: number
   onEventsChange?: () => void
 }
@@ -32,6 +33,13 @@ const statusLabelMap: Record<NonNullable<CalendarEvent['status']>, string> = {
   READY: 'Ready to post',
   POSTED: 'Posted',
 }
+
+const statusOptions = [
+  { value: 'NOT_STARTED', label: statusLabelMap.NOT_STARTED },
+  { value: 'PREPARING', label: statusLabelMap.PREPARING },
+  { value: 'READY', label: statusLabelMap.READY },
+  { value: 'POSTED', label: statusLabelMap.POSTED },
+]
 
 const buildCalendarDays = (reference: Date) => {
   const startOfMonth = new Date(reference.getFullYear(), reference.getMonth(), 1)
@@ -61,6 +69,7 @@ export function CalendarView({
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
   const [draggingEventId, setDraggingEventId] = useState<string | null>(null)
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
   const trashRef = useRef<HTMLDivElement | null>(null)
 
   const refreshScheduledPosts = useCallback(async () => {
@@ -106,6 +115,52 @@ export function CalendarView({
     setIsDrawerOpen(true)
   }
 
+  const handleStatusChange = async (eventId: string, status: NonNullable<CalendarEvent['status']>) => {
+    setUpdatingStatusId(eventId)
+    try {
+      const updatedEvent = await putScheduledPost(eventId, { status })
+      setEvents((prev) =>
+        prev.map((existing) =>
+          existing.id === eventId
+            ? {
+                ...existing,
+                ...updatedEvent,
+                start: updatedEvent.date ?? updatedEvent.start ?? existing.start,
+                date: updatedEvent.date ?? existing.date,
+              }
+            : existing,
+        ),
+      )
+      setSelectedEvent((current) =>
+        current && current.id === eventId
+          ? {
+              ...current,
+              ...updatedEvent,
+              start: updatedEvent.date ?? updatedEvent.start ?? current.start,
+              date: updatedEvent.date ?? current.date,
+            }
+          : current,
+      )
+      setSelectedDateIdeas((current) =>
+        current.map((existing) =>
+          existing.id === eventId
+            ? {
+                ...existing,
+                ...updatedEvent,
+                start: updatedEvent.date ?? updatedEvent.start ?? existing.start,
+                date: updatedEvent.date ?? existing.date,
+              }
+            : existing,
+        ),
+      )
+      onEventsChange?.()
+    } catch (error) {
+      console.error('Failed to update post status', error)
+    } finally {
+      setUpdatingStatusId(null)
+    }
+  }
+
   const handleDayDrop = async (event: React.DragEvent<HTMLDivElement>, dateKey: string) => {
     event.preventDefault()
     const calendarEventId = event.dataTransfer.getData('application/calendar-event')
@@ -149,7 +204,7 @@ export function CalendarView({
     }
   }
 
-  const handleEventDragStart = (eventObj: CalendarEvent, dragEvent: React.DragEvent<HTMLButtonElement>) => {
+  const handleEventDragStart = (eventObj: CalendarEvent, dragEvent: React.DragEvent<HTMLElement>) => {
     setDraggingEventId(eventObj.id)
     dragEvent.dataTransfer.setData('application/calendar-event', eventObj.id)
     dragEvent.dataTransfer.effectAllowed = 'move'
@@ -243,29 +298,66 @@ export function CalendarView({
                   const shouldShowDescription =
                     Boolean(eventItem.description) && /^(review|unboxing)$/i.test(baseTitle)
                   return (
-                    <button
+                    <div
                       key={eventItem.id}
                       className={`${s.event} ${
                         eventItem.idea.platform === 'BOOKTOK' ? s.booktok : s.devtok
                       }`}
+                      role="button"
+                      tabIndex={0}
                       title={`${eventItem.idea.title} • ${getStatusLabel(eventItem.status)}`}
                       draggable
-                      onDragStart={(dragEvent) => handleEventDragStart(eventItem, dragEvent)}
+                      onDragStart={(dragEvent) => {
+                        if ((dragEvent.target as HTMLElement).closest('select')) {
+                          dragEvent.preventDefault()
+                          return
+                        }
+                        handleEventDragStart(eventItem, dragEvent)
+                      }}
                       onDragEnd={handleDragEnd}
                       onClick={(clickEvent) => {
                         clickEvent.stopPropagation()
                         const date = (eventItem.date ?? eventItem.start)?.slice(0, 10) ?? dateKey
                         openDrawer(date, eventItem)
                       }}
+                      onKeyDown={(keyEvent) => {
+                        if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+                          keyEvent.preventDefault()
+                          const date = (eventItem.date ?? eventItem.start)?.slice(0, 10) ?? dateKey
+                          openDrawer(date, eventItem)
+                        }
+                      }}
                     >
-                      <span className={`${s.statusDot} ${getStatusDotClass(eventItem.status)}`} aria-hidden="true" />
-                      <span className={s.eventTitle}>
-                        {eventItem.idea.title}
-                        {shouldShowDescription && (
-                          <span className={s.eventDescription}>{eventItem.description}</span>
-                        )}
-                      </span>
-                    </button>
+                      <div className={s.eventMain}>
+                        <span className={`${s.statusDot} ${getStatusDotClass(eventItem.status)}`} aria-hidden="true" />
+                        <span className={s.eventTitle}>
+                          {eventItem.idea.title}
+                          {shouldShowDescription && (
+                            <span className={s.eventDescription}>{eventItem.description}</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className={s.statusControl}>
+                        <select
+                          aria-label="Change post status"
+                          value={eventItem.status ?? 'NOT_STARTED'}
+                          className={s.statusSelect}
+                          disabled={updatingStatusId === eventItem.id}
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                          onChange={(event) =>
+                            handleStatusChange(eventItem.id, event.target.value as NonNullable<CalendarEvent['status']>)
+                          }
+                        >
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        {updatingStatusId === eventItem.id && <span className={s.savingStatus}>Saving…</span>}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
