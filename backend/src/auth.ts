@@ -97,7 +97,35 @@ export async function authRoutes(fastify: FastifyInstance) {
         maxAge: null,
       });
       reply.header("Set-Cookie", cookieStr);
-      return { ok: true };
+      return { ok: true, message: "Logged out" };
+    }
+  );
+
+  // Graceful shutdown endpoint (admin only)
+  fastify.post(
+    "/shutdown",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      // Reuse auth check from /auth/status
+      const cookieHeader =
+        (request.headers && (request.headers as any).cookie) || null;
+      const cookies = parseCookies(cookieHeader);
+      const token = cookies["sm_session"];
+      const secret = process.env.AUTH_JWT_SECRET || "dev_secret_change_me";
+
+      if (!token) {
+        return reply.status(401).send({ ok: false, message: "Not authorized" });
+      }
+
+      try {
+        jwt.verify(token, secret);
+        reply.send({ ok: true, message: "Server stopping" });
+        // exit after response flushes
+        setTimeout(() => {
+          process.exit(0);
+        }, 150);
+      } catch (err) {
+        return reply.status(401).send({ ok: false, message: "Not authorized" });
+      }
     }
   );
 
