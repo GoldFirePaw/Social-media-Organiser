@@ -26,6 +26,8 @@ function App() {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [panelWidth, setPanelWidth] = useState(420);
   const [isResizing, setIsResizing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusTone, setStatusTone] = useState<"success" | "danger">("success");
   const bumpCalendarRefreshToken = useCallback(() => {
     setCalendarRefreshToken((token) => token + 1);
   }, []);
@@ -104,6 +106,31 @@ function App() {
       setAuthenticated(false);
       setIsDrawerOpen(false);
       setIsPanelOpen(false);
+      setStatusTone("success");
+      setStatusMessage("Logged out.");
+      setTimeout(() => setStatusMessage(null), 2500);
+    }
+  };
+
+  const handleShutdown = async () => {
+    try {
+      const res = await fetch("http://localhost:3001/shutdown", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setStatusTone("danger");
+        setStatusMessage("Shutdown failed (not authorized).");
+        setTimeout(() => setStatusMessage(null), 3000);
+        return;
+      }
+      setStatusTone("success");
+      setStatusMessage("App is shutting down…");
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch {
+      setStatusTone("danger");
+      setStatusMessage("Shutdown request failed.");
+      setTimeout(() => setStatusMessage(null), 3000);
     }
   };
 
@@ -126,7 +153,14 @@ function App() {
 
   return (
     <IdeasProvider>
-      <div className={s.App}>
+      <div
+        className={s.App}
+        style={
+          {
+            "--planner-offset": isPanelOpen ? `${panelWidth}px` : "0px",
+          } as React.CSSProperties
+        }
+      >
         <div className={s.container}>
           <div className={s.topBar}>
             <div className={s.panelToggleBar}>
@@ -140,6 +174,9 @@ function App() {
             </div>
             <button type="button" className={s.logoutButton} onClick={handleLogout}>
               Logout
+            </button>
+            <button type="button" className={s.logoutButton} onClick={handleShutdown}>
+              Quit app
             </button>
           </div>
           <div className={s.calendarColumn}>
@@ -227,6 +264,11 @@ function App() {
             }}
             onEventSelect={handleEventSelect}
           />
+        )}
+        {statusMessage && (
+          <div className={`${s.statusToast} ${statusTone === "danger" ? s.danger : s.success}`}>
+            {statusMessage}
+          </div>
         )}
       </div>
     </IdeasProvider>

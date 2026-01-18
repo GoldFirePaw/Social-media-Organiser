@@ -54,6 +54,15 @@ const buildCalendarDays = (reference: Date) => {
     cursor.setDate(cursor.getDate() + 1)
   }
 
+  while (days.length > 28) {
+    const trailingWeek = days.slice(-7)
+    const hasCurrentMonthDay = trailingWeek.some((day) => day.getMonth() === reference.getMonth())
+    if (hasCurrentMonthDay) {
+      break
+    }
+    days.splice(-7, 7)
+  }
+
   return days
 }
 
@@ -294,9 +303,6 @@ export function CalendarView({
               <span className={s.dateNumber}>{day.getDate()}</span>
               <div className={s.events}>
                 {dayEvents.map((eventItem) => {
-                  const baseTitle = (eventItem.idea.title ?? eventItem.title ?? '').trim()
-                  const shouldShowDescription =
-                    Boolean(eventItem.description) && /^(review|unboxing)$/i.test(baseTitle)
                   return (
                     <div
                       key={eventItem.id}
@@ -332,30 +338,10 @@ export function CalendarView({
                         <span className={`${s.statusDot} ${getStatusDotClass(eventItem.status)}`} aria-hidden="true" />
                         <span className={s.eventTitle}>
                           {eventItem.idea.title}
-                          {shouldShowDescription && (
+                          {eventItem.description && (
                             <span className={s.eventDescription}>{eventItem.description}</span>
                           )}
                         </span>
-                      </div>
-                      <div className={s.statusControl}>
-                        <select
-                          aria-label="Change post status"
-                          value={eventItem.status ?? 'NOT_STARTED'}
-                          className={s.statusSelect}
-                          disabled={updatingStatusId === eventItem.id}
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                          onChange={(event) =>
-                            handleStatusChange(eventItem.id, event.target.value as NonNullable<CalendarEvent['status']>)
-                          }
-                        >
-                          {statusOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        {updatingStatusId === eventItem.id && <span className={s.savingStatus}>Saving…</span>}
                       </div>
                     </div>
                   )
