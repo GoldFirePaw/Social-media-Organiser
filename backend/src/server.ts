@@ -22,7 +22,7 @@ fastify.register(cors, {
 
 fastify.register(authRoutes);
 
-fastify.listen({ port: 3001 });
+fastify.listen({ port: 3001, host: "0.0.0.0" });
 fastify.register(ideasRoutes);
 fastify.register(scheduledPostsRoutes);
 fastify.register(exportRoutes);
