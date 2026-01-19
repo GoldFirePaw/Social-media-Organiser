@@ -178,6 +178,28 @@
     gap: 0.5rem;
 }
 
+.cardActions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.scheduleButton {
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.scheduleError {
+    color: var(--color-danger);
+    margin-top: 0.5rem;
+}
+
 .ideaText h3 {
     margin: 0;
     font-size: 1.05rem;

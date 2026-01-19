@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { CloseButton } from "./reusableComponents/CloseButton";
 import s from "./DrawerView.module.css";
@@ -12,6 +12,12 @@ import {
   useEditableEvent,
   type ScheduledPostStatus,
 } from "../hooks/useEditableEvent";
+import { AddIdeaToCalendar } from "../api/addIdeaToCalendar";
+import { putScheduledPost } from "../api/putScheduledPost";
+import { removeIdeaFromCalendar } from "../api/removeIdeaFromCalendar";
+import { DatePickerDialog } from "./reusableComponents/DatePickerDialog";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { toISODate } from "../utils/date";
 
 
 const formatDrawerDate = (dateString?: string) => {
@@ -70,6 +76,14 @@ type DrawerViewProps = {
   onIdeaUpdated?: (idea: Idea) => void;
   onEventUpdated?: (updatedEvent: CalendarEvent) => void;
   onEventSelect?: (calendarEvent: CalendarEvent) => void;
+  onEventsChange?: () => void;
+  className?: string;
+  variant?: "desktop" | "mobile";
+  showCloseButton?: boolean;
+  showIdeaSection?: boolean;
+  showScheduledSection?: boolean;
+  showDayList?: boolean;
+  onViewIdea?: () => void;
 };
 
 export const DrawerView = ({
@@ -82,9 +96,24 @@ export const DrawerView = ({
   onIdeaUpdated,
   onEventUpdated,
   onEventSelect,
+  onEventsChange,
+  className,
+  variant = "desktop",
+  showCloseButton = true,
+  showIdeaSection = true,
+  showScheduledSection = true,
+  showDayList = true,
+  onViewIdea,
 }: DrawerViewProps) => {
   const offsetRight = Math.max(0, (plannerWidth ?? 0) + 12);
   const hasDateIdeas = dateIdeas.length > 0;
+  const isMobile = useIsMobile();
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<
+    "schedule" | "move" | "remove" | null
+  >(null);
   const {
     values,
     isEditing,
@@ -317,14 +346,77 @@ export const DrawerView = ({
 
   const formattedDate = useMemo(() => formatDrawerDate(date), [date]);
 
+  const handleScheduleIdea = async (dateKey: string) => {
+    if (!idea) return;
+    setActionLoading("schedule");
+    setActionError(null);
+    try {
+      const newEvent = await AddIdeaToCalendar(toISODate(dateKey), idea.id);
+      onEventSelect?.(newEvent);
+      onEventsChange?.();
+      setScheduleOpen(false);
+    } catch (err) {
+      console.error("Failed to schedule idea", err);
+      setActionError("Failed to schedule idea");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleMovePost = async (dateKey: string) => {
+    if (!selectedEvent) return;
+    setActionLoading("move");
+    setActionError(null);
+    try {
+      const updatedEvent = await putScheduledPost(selectedEvent.id, {
+        date: toISODate(dateKey),
+      });
+      onEventUpdated?.(updatedEvent);
+      onEventsChange?.();
+      setMoveOpen(false);
+    } catch (err) {
+      console.error("Failed to move scheduled post", err);
+      setActionError("Failed to move scheduled post");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemovePost = async () => {
+    if (!selectedEvent) return;
+    const confirmed = window.confirm(
+      "Remove this scheduled post from the calendar?"
+    );
+    if (!confirmed) return;
+    setActionLoading("remove");
+    setActionError(null);
+    try {
+      await removeIdeaFromCalendar(selectedEvent.id);
+      onEventsChange?.();
+      setIsDrawerOpen(false);
+    } catch (err) {
+      console.error("Failed to remove scheduled post", err);
+      setActionError("Failed to remove scheduled post");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
-    <div className={s.drawerView} style={{ right: offsetRight }}>
-      <CloseButton
-        onClick={(event) => {
-          event.preventDefault();
-          setIsDrawerOpen(false);
-        }}
-      />
+    <div
+      className={`${s.drawerView} ${variant === "mobile" ? s.drawerViewMobile : ""} ${
+        className ?? ""
+      }`}
+      style={{ right: offsetRight }}
+    >
+      {showCloseButton && (
+        <CloseButton
+          onClick={(event) => {
+            event.preventDefault();
+            setIsDrawerOpen(false);
+          }}
+        />
+      )}
       <div className={s.drawerHeader}>
         <span className={s.drawerHeaderPrimary}>{formattedDate.primary}</span>
         {formattedDate.secondary && (
@@ -333,7 +425,7 @@ export const DrawerView = ({
           </span>
         )}
       </div>
-      {idea && (
+      {showIdeaSection && idea && (
         <div className={s.ideaDetails}>
           <div className={s.ideaSummary}>
             <div className={s.ideaSummaryTop}>
@@ -394,6 +486,16 @@ export const DrawerView = ({
                   Cancel
                 </button>
               ) : null}
+              {isMobile && (
+                <button
+                  type="button"
+                  className={s.summaryButton}
+                  onClick={() => setScheduleOpen(true)}
+                  disabled={actionLoading === "schedule" || !idea}
+                >
+                  Schedule
+                </button>
+              )}
               <button
                 type="button"
                 className={`${s.summaryButton} ${s.summaryButtonPrimary}`}
@@ -414,9 +516,38 @@ export const DrawerView = ({
         </div>
       )}
       {error && <p className={s.errorMessage}>{error}</p>}
-      {selectedEvent && (
+      {showScheduledSection && selectedEvent && (
         <div className={s.scheduledSection}>
           <h3 className={s.sectionHeading}>Scheduled Post</h3>
+          {isMobile && (
+            <div className={s.scheduledActions}>
+              <button
+                type="button"
+                className={s.summaryButton}
+                onClick={() => setMoveOpen(true)}
+                disabled={actionLoading === "move"}
+              >
+                Move
+              </button>
+              <button
+                type="button"
+                className={`${s.summaryButton} ${s.dangerButton}`}
+                onClick={handleRemovePost}
+                disabled={actionLoading === "remove"}
+              >
+                Remove from calendar
+              </button>
+              {onViewIdea && idea && (
+                <button
+                  type="button"
+                  className={s.summaryButton}
+                  onClick={onViewIdea}
+                >
+                  View idea
+                </button>
+              )}
+            </div>
+          )}
           <div className={s.fieldRow}>
             <div className={s.fieldLabel}>Date</div>
             <div className={s.fieldContent}>
@@ -538,7 +669,8 @@ export const DrawerView = ({
         </div>
       )}
       {eventError && <p className={s.errorMessage}>{eventError}</p>}
-      {hasDateIdeas && (
+      {actionError && <p className={s.errorMessage}>{actionError}</p>}
+      {showDayList && hasDateIdeas && (
         <div className={s.ideaList}>
           <h3 className={s.sectionHeading}>Ideas scheduled this day</h3>
           <ul>
@@ -569,7 +701,40 @@ export const DrawerView = ({
           </ul>
         </div>
       )}
-      {!hasDateIdeas && !idea && <p>No idea scheduled for this date.</p>}
+      {showDayList && !hasDateIdeas && !idea && (
+        <p>No idea scheduled for this date.</p>
+      )}
+      <DatePickerDialog
+        isOpen={scheduleOpen}
+        title="Schedule idea"
+        confirmLabel={actionLoading === "schedule" ? "Scheduling..." : "Schedule"}
+        confirmDisabled={actionLoading === "schedule"}
+        initialDate={date}
+        onCancel={() => {
+          if (actionLoading !== "schedule") {
+            setScheduleOpen(false);
+            setActionError(null);
+          }
+        }}
+        onConfirm={handleScheduleIdea}
+      />
+      <DatePickerDialog
+        isOpen={moveOpen}
+        title="Move scheduled post"
+        confirmLabel={actionLoading === "move" ? "Moving..." : "Move"}
+        confirmDisabled={actionLoading === "move"}
+        initialDate={
+          selectedEvent?.date?.slice(0, 10) ??
+          selectedEvent?.start?.slice(0, 10)
+        }
+        onCancel={() => {
+          if (actionLoading !== "move") {
+            setMoveOpen(false);
+            setActionError(null);
+          }
+        }}
+        onConfirm={handleMovePost}
+      />
     </div>
   );
 };
