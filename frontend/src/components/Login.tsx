@@ -22,7 +22,7 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
     setError(null)
 
     try {
-      const res = await fetch('http://localhost:3001/login', {
+      const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -48,7 +48,7 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
   }
 
   const onLogout = async () => {
-    await fetch('http://localhost:3001/logout', { method: 'POST', credentials: 'include' })
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' })
     localStorage.removeItem('sm_logged_in')
     setLoggedIn(false)
     onLogin?.()

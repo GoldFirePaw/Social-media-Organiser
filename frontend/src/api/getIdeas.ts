@@ -11,7 +11,7 @@ export type Idea = {
 }
 
 export async function getIdeas(): Promise<Idea[]> {
-  const response = await fetch('http://localhost:3001/ideas')
+  const response = await fetch('/api/ideas')
   if (!response.ok) {
     throw new Error('Failed to fetch ideas')
   }

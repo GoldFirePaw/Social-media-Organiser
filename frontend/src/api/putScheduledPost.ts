@@ -8,7 +8,7 @@ export type UpdateScheduledPostPayload = {
 
 export const putScheduledPost = async (postId: string, payload: UpdateScheduledPostPayload): Promise<CalendarEvent> => {
   const response = await fetch(
-    `http://localhost:3001/scheduled-posts/${postId}`,
+    `/api/scheduled-posts/${postId}`,
     {
       method: "PUT",
       headers: {

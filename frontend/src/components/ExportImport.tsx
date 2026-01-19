@@ -55,7 +55,7 @@ export const ExportImport: React.FC<Props> = ({ onImportComplete }) => {
     setLoading(true)
     setMessage(null)
     try {
-      const res = await fetch('http://localhost:3001/export', {
+      const res = await fetch('/api/export', {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Export failed')
@@ -102,7 +102,7 @@ export const ExportImport: React.FC<Props> = ({ onImportComplete }) => {
 
   const performBackup = async () => {
     try {
-      const res = await fetch('http://localhost:3001/export', { credentials: 'include' })
+      const res = await fetch('/api/export', { credentials: 'include' })
       if (!res.ok) throw new Error('Backup failed')
       const data = await res.json()
       const json = JSON.stringify(data, null, 2)
@@ -134,7 +134,7 @@ export const ExportImport: React.FC<Props> = ({ onImportComplete }) => {
         }
       }
 
-      const res = await fetch('http://localhost:3001/import', {
+      const res = await fetch('/api/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

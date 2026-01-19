@@ -5,7 +5,7 @@ export type Theme = {
 }
 
 export const getThemes = async (): Promise<Theme[]> => {
-  const response = await fetch('http://localhost:3001/themes')
+  const response = await fetch('/api/themes')
   if (!response.ok) {
     throw new Error('Failed to fetch themes')
   }

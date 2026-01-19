@@ -1,6 +1,6 @@
 export const removeIdeaFromCalendar = async (scheduledPostId: string) => {
   const response = await fetch(
-    `http://localhost:3001/scheduled-posts/${scheduledPostId}`,
+    `/api/scheduled-posts/${scheduledPostId}`,
     {
       method: "DELETE",
       credentials: "include",

@@ -1,5 +1,5 @@
 export const deleteIdeas = async (id: string) => {
-  const response = await fetch(`http://localhost:3001/ideas?id=${id}`, {
+  const response = await fetch(`/api/ideas?id=${id}`, {
     method: "DELETE",
     credentials: "include",
   });

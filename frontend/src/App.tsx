@@ -70,7 +70,7 @@ function App() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("http://localhost:3001/auth/status", {
+        const res = await fetch("/api/auth/status", {
           credentials: "include",
         });
         if (!mounted) return;
@@ -133,7 +133,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:3001/logout", {
+      await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
       });
@@ -152,7 +152,7 @@ function App() {
 
   const handleShutdown = async () => {
     try {
-      const res = await fetch("http://localhost:3001/shutdown", {
+      const res = await fetch("/api/shutdown", {
         method: "POST",
         credentials: "include",
       });

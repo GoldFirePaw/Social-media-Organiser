@@ -10,7 +10,7 @@ export type UpdateIdeaPayload = {
 }
 
 export const updateIdea = async (id: string, payload: UpdateIdeaPayload): Promise<Idea> => {
-  const response = await fetch(`http://localhost:3001/ideas/${id}`, {
+  const response = await fetch(`/api/ideas/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

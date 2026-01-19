@@ -8,7 +8,7 @@ export type IdeaData = {
 
 export const postIdeas = async (data: IdeaData) => {
   console.log('Posting idea:', data)
-  const response = await fetch("http://localhost:3001/ideas", {
+  const response = await fetch("/api/ideas", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
