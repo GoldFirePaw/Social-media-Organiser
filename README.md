@@ -58,7 +58,7 @@ cd backend
 npx ts-node-dev --respawn src/server.ts
 ```
 
-- Fastify listens on `http://localhost:3001` (adjust in `src/server.ts`).
+- Fastify listens on `http://localhost:3003` (adjust in `src/server.ts`).
 - Routes:
   - `GET /health` → `{ status: 'ok' }`
   - `GET /ideas?platform=BOOKTOK&status=PLANNED` → filtered list ordered by `createdAt desc`
@@ -73,7 +73,7 @@ npm run dev
 ```
 
 - Vite serves the app on `http://localhost:5173` by default.
-- Configure API calls (e.g., via `fetch`) to hit `http://localhost:3001`. Consider adding a Vite proxy in `vite.config.ts` if you need to avoid CORS in development.
+- Configure API calls (e.g., via `fetch`) to hit `http://localhost:3003`. Consider adding a Vite proxy in `vite.config.ts` if you need to avoid CORS in development.
 
 ### Quick start (both servers)
 

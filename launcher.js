@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Local launcher for the app on macOS.
- * - Starts backend (port 3001)
+ * - Starts backend (port 3003)
  * - Starts frontend dev server (port 5173)
  * - Opens the browser
  * - Cleans up child processes on exit
@@ -12,7 +12,7 @@ const { resolve } = require("node:path");
 const root = __dirname;
 const backendDir = resolve(root, "backend");
 const frontendDir = resolve(root, "frontend");
-const backendPort = process.env.PORT || "3001";
+const backendPort = process.env.PORT || "3003";
 const frontendPort = process.env.FRONTEND_PORT || "5173";
 
 const children = new Set();

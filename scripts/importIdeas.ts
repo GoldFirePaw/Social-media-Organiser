@@ -28,7 +28,7 @@ async function importIdeas() {
     payload.mode = "replace";
 
     console.log("Posting payload to /import (replace mode)");
-    const res = await fetch("http://localhost:3001/import", {
+    const res = await fetch("http://localhost:3003/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
