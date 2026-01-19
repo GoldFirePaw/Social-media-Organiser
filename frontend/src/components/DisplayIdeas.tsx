@@ -11,10 +11,15 @@ import { FilmingQueue } from "./FilmingQueue";
 import { useIdeaSimilarities } from "../hooks/useIdeaSimilarities";
 import { useIdeaThemes, useOverusedKeywords } from "../hooks/useIdeaThemes";
 import { updateIdea } from "../api/updateIdea";
+import { AddIdeaToCalendar } from "../api/addIdeaToCalendar";
+import { DatePickerDialog } from "./reusableComponents/DatePickerDialog";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { toISODate } from "../utils/date";
 
 type DisplayIdeasProps = {
   onIdeaSelect: (idea: Idea) => void;
   scheduledPostsRefreshToken: number;
+  onScheduleComplete?: () => void;
 };
 
 const platformFilters: { label: string; value: PlatformFilterValue }[] = [
@@ -59,12 +64,20 @@ const formatLastPosted = (idea: Idea) => {
   return `Last posted ${timestamp.toLocaleDateString()}`;
 };
 
-export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: DisplayIdeasProps) {
+export function DisplayIdeas({
+  onIdeaSelect,
+  scheduledPostsRefreshToken,
+  onScheduleComplete,
+}: DisplayIdeasProps) {
   const { ideas, error, refresh } = useIdeas();
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"list" | "form" | "queue">(
     "list"
   );
+  const isMobile = useIsMobile();
+  const [scheduleIdea, setScheduleIdea] = useState<Idea | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
   const similarIdeasMap = useIdeaSimilarities(ideas, 0.35);
   const ideaThemes = useIdeaThemes(ideas);
   const overused = useOverusedKeywords(ideas, 12);
@@ -94,6 +107,23 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
       await refresh();
     } catch (error) {
       console.error("Error deleting idea:", error);
+    }
+  };
+
+  const handleScheduleIdea = async (dateKey: string) => {
+    if (!scheduleIdea) return;
+    setScheduleLoading(true);
+    setScheduleError(null);
+    try {
+      await AddIdeaToCalendar(toISODate(dateKey), scheduleIdea.id);
+      await refresh();
+      onScheduleComplete?.();
+      setScheduleIdea(null);
+    } catch (error) {
+      console.error("Failed to schedule idea:", error);
+      setScheduleError("Failed to schedule idea");
+    } finally {
+      setScheduleLoading(false);
     }
   };
 
@@ -258,7 +288,11 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
           <p className={s.listCount}>
             {filteredIdeas.length} {filteredIdeas.length === 1 ? "idea" : "ideas"}
           </p>
-          <p className={s.listHint}>Drag an idea to the calendar or click to open it.</p>
+          <p className={s.listHint}>
+            {isMobile
+              ? "Tap an idea to open it or schedule it."
+              : "Drag an idea to the calendar or click to open it."}
+          </p>
         </div>
       </div>
       <div className={s.ideasContainer}>
@@ -278,17 +312,31 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
                   <h3>{idea.title}</h3>
                   {idea.description && <p className={s.ideaDescription}>{idea.description}</p>}
                 </div>
-                <button
-                  type="button"
-                  className={s.deleteButton}
-                  aria-label="Delete idea"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleDeleteIdeas(idea.id);
-                  }}
-                >
-                  &times;
-                </button>
+                <div className={s.cardActions}>
+                  {isMobile && (
+                    <button
+                      type="button"
+                      className={s.scheduleButton}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setScheduleIdea(idea);
+                      }}
+                    >
+                      Schedule
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={s.deleteButton}
+                    aria-label="Delete idea"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDeleteIdeas(idea.id);
+                    }}
+                  >
+                    &times;
+                  </button>
+                </div>
               </div>
               {(() => {
                 const explicitThemes = idea.themes ?? [];
@@ -425,6 +473,20 @@ export function DisplayIdeas({ onIdeaSelect, scheduledPostsRefreshToken }: Displ
           <FilmingQueue refreshToken={scheduledPostsRefreshToken} variant="embedded" />
         </div>
       )}
+      <DatePickerDialog
+        isOpen={Boolean(scheduleIdea)}
+        title="Schedule idea"
+        confirmLabel={scheduleLoading ? "Scheduling..." : "Schedule"}
+        confirmDisabled={scheduleLoading}
+        onCancel={() => {
+          if (!scheduleLoading) {
+            setScheduleIdea(null);
+            setScheduleError(null);
+          }
+        }}
+        onConfirm={handleScheduleIdea}
+      />
+      {scheduleError && <p className={s.scheduleError}>{scheduleError}</p>}
     </Card>
   );
 }

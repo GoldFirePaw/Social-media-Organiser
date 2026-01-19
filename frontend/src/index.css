@@ -31,6 +31,7 @@
   --shadow-float: 0 25px 60px rgba(15, 23, 42, 0.12);
   --radius-card: 18px;
   --radius-pill: 999px;
+  --mobile-breakpoint: 900px;
   font-family: 'Inter', 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -50,6 +51,12 @@ body {
   background: var(--color-page);
   color: var(--color-text);
   font-family: inherit;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --is-mobile: 1;
+  }
 }
 
 button {
