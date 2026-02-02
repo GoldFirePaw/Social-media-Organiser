@@ -34,12 +34,7 @@ const statusLabelMap: Record<NonNullable<CalendarEvent['status']>, string> = {
   POSTED: 'Posted',
 }
 
-const statusOptions = [
-  { value: 'NOT_STARTED', label: statusLabelMap.NOT_STARTED },
-  { value: 'PREPARING', label: statusLabelMap.PREPARING },
-  { value: 'READY', label: statusLabelMap.READY },
-  { value: 'POSTED', label: statusLabelMap.POSTED },
-]
+const monthDragNavigateDelayMs = 500
 
 const buildCalendarDays = (reference: Date) => {
   const startOfMonth = new Date(reference.getFullYear(), reference.getMonth(), 1)
@@ -78,8 +73,8 @@ export function CalendarView({
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
   const [draggingEventId, setDraggingEventId] = useState<string | null>(null)
-  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
   const trashRef = useRef<HTMLDivElement | null>(null)
+  const lastMonthDragNavigationRef = useRef<{ at: number; delta: number } | null>(null)
 
   const refreshScheduledPosts = useCallback(async () => {
     const data = await getScheduledPosts()
@@ -124,52 +119,6 @@ export function CalendarView({
     setIsDrawerOpen(true)
   }
 
-  const handleStatusChange = async (eventId: string, status: NonNullable<CalendarEvent['status']>) => {
-    setUpdatingStatusId(eventId)
-    try {
-      const updatedEvent = await putScheduledPost(eventId, { status })
-      setEvents((prev) =>
-        prev.map((existing) =>
-          existing.id === eventId
-            ? {
-                ...existing,
-                ...updatedEvent,
-                start: updatedEvent.date ?? updatedEvent.start ?? existing.start,
-                date: updatedEvent.date ?? existing.date,
-              }
-            : existing,
-        ),
-      )
-      setSelectedEvent((current) =>
-        current && current.id === eventId
-          ? {
-              ...current,
-              ...updatedEvent,
-              start: updatedEvent.date ?? updatedEvent.start ?? current.start,
-              date: updatedEvent.date ?? current.date,
-            }
-          : current,
-      )
-      setSelectedDateIdeas((current) =>
-        current.map((existing) =>
-          existing.id === eventId
-            ? {
-                ...existing,
-                ...updatedEvent,
-                start: updatedEvent.date ?? updatedEvent.start ?? existing.start,
-                date: updatedEvent.date ?? existing.date,
-              }
-            : existing,
-        ),
-      )
-      onEventsChange?.()
-    } catch (error) {
-      console.error('Failed to update post status', error)
-    } finally {
-      setUpdatingStatusId(null)
-    }
-  }
-
   const handleDayDrop = async (event: React.DragEvent<HTMLDivElement>, dateKey: string) => {
     event.preventDefault()
     const calendarEventId = event.dataTransfer.getData('application/calendar-event')
@@ -187,6 +136,8 @@ export function CalendarView({
         onEventsChange?.()
       } catch (error) {
         console.error('Failed to update scheduled post', error)
+      } finally {
+        lastMonthDragNavigationRef.current = null
       }
       return
     }
@@ -209,6 +160,8 @@ export function CalendarView({
         onEventsChange?.()
       } catch (error) {
         console.error('Failed to add idea to calendar', error)
+      } finally {
+        lastMonthDragNavigationRef.current = null
       }
     }
   }
@@ -221,6 +174,7 @@ export function CalendarView({
 
   const handleDragEnd = () => {
     setDraggingEventId(null)
+    lastMonthDragNavigationRef.current = null
   }
 
   const handleTrashDrop = async (event: React.DragEvent<HTMLDivElement>) => {
@@ -236,7 +190,32 @@ export function CalendarView({
       console.error('Failed to remove idea from calendar', error)
     } finally {
       setDraggingEventId(null)
+      lastMonthDragNavigationRef.current = null
     }
+  }
+
+  const isDraggingCalendarEvent = (event: React.DragEvent<HTMLElement>) =>
+    event.dataTransfer.types.includes('application/calendar-event')
+
+  const maybeChangeMonthWhileDragging = (event: React.DragEvent<HTMLElement>, delta: number) => {
+    if (!isDraggingCalendarEvent(event)) {
+      return
+    }
+    event.preventDefault()
+
+    const now = Date.now()
+    const lastNavigation = lastMonthDragNavigationRef.current
+    const canNavigate =
+      !lastNavigation ||
+      lastNavigation.delta !== delta ||
+      now - lastNavigation.at >= monthDragNavigateDelayMs
+
+    if (!canNavigate) {
+      return
+    }
+
+    changeMonth(delta)
+    lastMonthDragNavigationRef.current = { at: now, delta }
   }
 
   const changeMonth = (delta: number) => {
@@ -270,13 +249,25 @@ export function CalendarView({
   return (
     <div className={s.calendarWrapper}>
       <header className={s.header}>
-        <button type="button" onClick={() => changeMonth(-1)}>
+        <button
+          type="button"
+          onClick={() => changeMonth(-1)}
+          onDragEnter={(event) => maybeChangeMonthWhileDragging(event, -1)}
+          onDragOver={(event) => maybeChangeMonthWhileDragging(event, -1)}
+          onDrop={(event) => event.preventDefault()}
+        >
           ‹
         </button>
         <div>
           {currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}
         </div>
-        <button type="button" onClick={() => changeMonth(1)}>
+        <button
+          type="button"
+          onClick={() => changeMonth(1)}
+          onDragEnter={(event) => maybeChangeMonthWhileDragging(event, 1)}
+          onDragOver={(event) => maybeChangeMonthWhileDragging(event, 1)}
+          onDrop={(event) => event.preventDefault()}
+        >
           ›
         </button>
       </header>
@@ -313,13 +304,7 @@ export function CalendarView({
                       tabIndex={0}
                       title={`${eventItem.idea.title} • ${getStatusLabel(eventItem.status)}`}
                       draggable
-                      onDragStart={(dragEvent) => {
-                        if ((dragEvent.target as HTMLElement).closest('select')) {
-                          dragEvent.preventDefault()
-                          return
-                        }
-                        handleEventDragStart(eventItem, dragEvent)
-                      }}
+                      onDragStart={(dragEvent) => handleEventDragStart(eventItem, dragEvent)}
                       onDragEnd={handleDragEnd}
                       onClick={(clickEvent) => {
                         clickEvent.stopPropagation()
